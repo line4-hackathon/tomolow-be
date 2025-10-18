@@ -1,5 +1,15 @@
 package com.hackathon.tomolow.domain.auth.controller;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.hackathon.tomolow.domain.auth.dto.request.LoginRequest;
 import com.hackathon.tomolow.domain.auth.dto.response.LoginResponse;
 import com.hackathon.tomolow.domain.auth.service.AuthService;
@@ -7,17 +17,10 @@ import com.hackathon.tomolow.domain.user.exception.UserErrorCode;
 import com.hackathon.tomolow.domain.user.repository.UserRepository;
 import com.hackathon.tomolow.global.exception.CustomException;
 import com.hackathon.tomolow.global.response.BaseResponse;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 @RestController // 해당 클래스가 REST API 컨트롤러임을 나타냄
 @RequiredArgsConstructor // final 필드를 매개변수로 받는 생성자 자동 생성
@@ -33,14 +36,16 @@ public class AuthController {
   public ResponseEntity<BaseResponse<LoginResponse>> login(
       @RequestBody @Valid LoginRequest loginRequest, // 로그인 요청 DTO
       HttpServletResponse response // HTTP 응답 객체
-  ) {
+      ) {
     // 로그인 처리 서비스 호출
     LoginResponse loginResponse = authService.login(loginRequest);
 
     // 사용자로부터 refreshToken 가져오기
-    String refreshToken = userRepository.findByUsername(loginRequest.getUsername())
-        .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND)) // 사용자 없으면 예외
-        .getRefreshToken();
+    String refreshToken =
+        userRepository
+            .findByUsername(loginRequest.getUsername())
+            .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND)) // 사용자 없으면 예외
+            .getRefreshToken();
 
     // Set-Cookie 설정 (HttpOnly + Secure)
     Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);

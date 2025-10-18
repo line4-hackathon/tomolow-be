@@ -1,7 +1,5 @@
 package com.hackathon.tomolow.domain.user.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.hackathon.tomolow.global.common.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -10,6 +8,10 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.hackathon.tomolow.global.common.BaseTimeEntity;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,7 +33,7 @@ public class User extends BaseTimeEntity {
   @Column(name = "username", nullable = false)
   private String username;
 
-  @JsonIgnore  // JSON 응답 시 password는 포함되지 않도록 설정
+  @JsonIgnore // JSON 응답 시 password는 포함되지 않도록 설정
   @Column(name = "password", nullable = false)
   private String password;
 
@@ -45,7 +47,7 @@ public class User extends BaseTimeEntity {
   @Column(name = "refresh_token")
   private String refreshToken;
 
-  @Column(name = "role", nullable = false)  // "role" 컬럼과 매핑, Enum을 문자열로 저장
+  @Column(name = "role", nullable = false) // "role" 컬럼과 매핑, Enum을 문자열로 저장
   @Enumerated(EnumType.STRING)
   @Builder.Default // Builder를 사용할 때 기본값으로 Role.USER 설정
   private Role role = Role.USER;
@@ -58,5 +60,4 @@ public class User extends BaseTimeEntity {
   public void updatePassword(String password) {
     this.password = password;
   }
-
 }

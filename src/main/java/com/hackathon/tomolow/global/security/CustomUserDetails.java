@@ -1,12 +1,15 @@
 package com.hackathon.tomolow.global.security;
 
-import com.hackathon.tomolow.domain.user.entity.User;
 import java.util.Collection;
 import java.util.List;
-import lombok.Getter;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import com.hackathon.tomolow.domain.user.entity.User;
+
+import lombok.Getter;
 
 @Getter
 public class CustomUserDetails implements UserDetails {

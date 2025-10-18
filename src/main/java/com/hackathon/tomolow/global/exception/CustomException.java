@@ -1,6 +1,7 @@
 package com.hackathon.tomolow.global.exception;
 
 import com.hackathon.tomolow.global.exception.model.BaseErrorCode;
+
 import lombok.Getter;
 
 @Getter

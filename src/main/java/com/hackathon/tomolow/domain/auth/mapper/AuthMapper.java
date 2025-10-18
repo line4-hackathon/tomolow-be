@@ -1,8 +1,9 @@
 package com.hackathon.tomolow.domain.auth.mapper;
 
+import org.springframework.stereotype.Component;
+
 import com.hackathon.tomolow.domain.auth.dto.response.LoginResponse;
 import com.hackathon.tomolow.domain.user.entity.User;
-import org.springframework.stereotype.Component;
 
 @Component // Spring Bean으로 등록
 public class AuthMapper {
@@ -19,4 +20,3 @@ public class AuthMapper {
         .build(); // DTO 반환
   }
 }
-

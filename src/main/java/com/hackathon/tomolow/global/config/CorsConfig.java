@@ -3,6 +3,7 @@ package com.hackathon.tomolow.global.config;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,7 +28,8 @@ public class CorsConfig {
     config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
 
     // 필요한 헤더만 허용(운영 보안); dev에선 *도 가능
-    config.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type", "Accept"));
+    config.setAllowedHeaders(
+        Arrays.asList("Authorization", "Cache-Control", "Content-Type", "Accept"));
 
     // 인증정보(쿠키/Authorization) 전달 허용
     config.setAllowCredentials(true);

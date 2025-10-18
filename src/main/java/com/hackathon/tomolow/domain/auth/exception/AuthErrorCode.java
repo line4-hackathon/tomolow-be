@@ -1,14 +1,15 @@
 package com.hackathon.tomolow.domain.auth.exception;
 
+import org.springframework.http.HttpStatus;
+
 import com.hackathon.tomolow.global.exception.model.BaseErrorCode;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.springframework.http.HttpStatus;
 
 @Getter // 모든 필드에 대한 Getter 자동 생성
 @AllArgsConstructor // 모든 필드를 매개변수로 받는 생성자 생성
 public enum AuthErrorCode implements BaseErrorCode { // 인증 관련 에러 코드 열거형
-
   LOGIN_FAIL("AUTH_4001", "로그인 중 오류 발생", HttpStatus.BAD_REQUEST),
   TOKEN_FAIL("AUTH_4002", "액세스 토큰 요청 실패", HttpStatus.UNAUTHORIZED),
   USER_INFO_FAIL("AUTH_4003", "사용자 정보 요청 실패", HttpStatus.UNAUTHORIZED),

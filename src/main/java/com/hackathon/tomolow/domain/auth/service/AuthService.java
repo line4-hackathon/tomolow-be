@@ -1,5 +1,12 @@
 package com.hackathon.tomolow.domain.auth.service;
 
+import java.util.UUID;
+
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.hackathon.tomolow.domain.auth.dto.request.LoginRequest;
 import com.hackathon.tomolow.domain.auth.dto.response.LoginResponse;
 import com.hackathon.tomolow.domain.auth.mapper.AuthMapper;
@@ -8,13 +15,9 @@ import com.hackathon.tomolow.domain.user.exception.UserErrorCode;
 import com.hackathon.tomolow.domain.user.repository.UserRepository;
 import com.hackathon.tomolow.global.exception.CustomException;
 import com.hackathon.tomolow.global.jwt.JwtProvider;
-import java.util.UUID;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service // Spring의 Service 계층으로 등록
 @Slf4j // Lombok: 로그 사용 가능하게 함 (log.info 등)
@@ -29,23 +32,24 @@ public class AuthService {
   @Transactional
   public LoginResponse login(LoginRequest loginRequest) {
     // 사용자 조회 (없으면 예외)
-    User user = userRepository.findByUsername(loginRequest.getUsername())
-        .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+    User user =
+        userRepository
+            .findByUsername(loginRequest.getUsername())
+            .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 
     // 사용자 인증 토큰 생성 (username, password 기반)
     UsernamePasswordAuthenticationToken authenticationToken =
         new UsernamePasswordAuthenticationToken(
-            loginRequest.getUsername(),
-            loginRequest.getPassword()
-        );
+            loginRequest.getUsername(), loginRequest.getPassword());
 
     // 실제 인증 수행
     authenticationManager.authenticate(authenticationToken);
 
     // 액세스 토큰 및 리프레시 토큰 생성
     String accessToken = jwtProvider.createAccessToken(user.getUsername());
-    String refreshToken = jwtProvider.createRefreshToken(user.getUsername(),
-        UUID.randomUUID().toString()); // 리프레시 토큰은 랜덤값 추가로 보안 강화
+    String refreshToken =
+        jwtProvider.createRefreshToken(
+            user.getUsername(), UUID.randomUUID().toString()); // 리프레시 토큰은 랜덤값 추가로 보안 강화
 
     // 리프레시 토큰을 User 엔티티에 저장
     user.createRefreshToken(refreshToken);
