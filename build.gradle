@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.6'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.diffplug.spotless' version '6.19.0'
 }
 
 group = 'com.likelion'
@@ -25,15 +26,19 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // Web
     implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // DB
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    runtimeOnly 'com.mysql:mysql-connector-j'
 
     // lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-    runtimeOnly 'com.mysql:mysql-connector-j'
-
+    // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
@@ -49,6 +54,23 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 }
 
-tasks.named('test') {
-    useJUnitPlatform()
+tasks.named('compileJava') {
+    dependsOn 'spotlessApply'
 }
+
+spotless {
+    java {
+        // Google JAVA Format 적용
+        googleJavaFormat()
+        // 아래 순서로 import 문 정렬
+        importOrder('java', 'javax', 'jakarta', 'org', 'com')
+        // 사용하지 않는 import 제거
+        removeUnusedImports()
+        // 각 라인 끝에 있는 공백을 제거
+        trimTrailingWhitespace()
+        // 파일 끝에 새로운 라인 추가
+        endWithNewline()
+    }
+}
+
+def springProfile = project.findProperty("spring.profiles.active") ?: ""
