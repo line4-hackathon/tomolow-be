@@ -14,9 +14,6 @@ jobs:
       # 1. 레포지토리 체크아웃
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GIT_ACTION_TOKEN }}
-          submodules: true  # 서브모듈 포함 체크아웃
 
       # 3. JDK 21 설정
       - name: Set up JDK 21
@@ -31,8 +28,7 @@ jobs:
 
       # 5. Gradle로 빌드 (bootJar 생성)
       - name: Build with Gradle
-        run: |
-          ./gradlew clean bootjar -Pprofile=dev
+        run: ./gradlew clean bootjar
 
       # Docker Hub 로그인
       - name: Docker Hub Login

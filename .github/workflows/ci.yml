@@ -51,9 +51,6 @@ jobs:
       # 1. 코드 체크아웃
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          submodules: true
-          token: ${{ secrets.GIT_ACTION_TOKEN }}
 
       # 2. JDK 21 설정
       - name: Set up JDK 21
