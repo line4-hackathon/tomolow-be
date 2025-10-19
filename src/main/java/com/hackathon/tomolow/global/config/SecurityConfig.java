@@ -2,6 +2,7 @@ package com.hackathon.tomolow.global.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -42,6 +43,9 @@ public class SecurityConfig {
         .authorizeHttpRequests(
             request ->
                 request
+                    // Preflight 전면 허용 (가장 위에!)
+                    .requestMatchers(HttpMethod.OPTIONS, "/**")
+                    .permitAll()
                     // Swagger 경로 인증 필요
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
                     .permitAll()
