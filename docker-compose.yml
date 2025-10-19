@@ -11,6 +11,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - QDRANT_BASE_URL=http://qdrant:6333
+      - JWT_SECRET=${JWT_SECRET}
       # - OPENAPI_SERVICE_KEY=${OPENAPI_SERVICE_KEY}
     command:
       - java -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} -jar app.jar
