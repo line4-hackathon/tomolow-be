@@ -1,5 +1,6 @@
 package com.hackathon.tomolow.domain.transaction.entity;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -41,6 +42,9 @@ public class Transaction extends BaseTimeEntity {
 
   @Column(name = "quantity", nullable = false)
   private int quantity; // 거래 수량
+
+  @Column(name = "price", nullable = false)
+  private BigDecimal price;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "trade_type", nullable = false)
