@@ -1,5 +1,8 @@
 package com.hackathon.tomolow.domain.user.entity;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -51,6 +54,21 @@ public class User extends BaseTimeEntity {
   @Enumerated(EnumType.STRING)
   @Builder.Default // Builder를 사용할 때 기본값으로 Role.USER 설정
   private Role role = Role.USER;
+
+  // 투자자산
+  @Column(name = "investment_balance", nullable = false, precision = 19, scale = 2)
+  @Builder.Default
+  private BigDecimal investmentBalance = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+
+  // 현금자산
+  @Column(name = "cash_balance", nullable = false, precision = 19, scale = 2)
+  @Builder.Default
+  private BigDecimal cashBalance = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+
+  // 기존자산
+  @Column(name = "origin_balance", nullable = false, precision = 19, scale = 2)
+  @Builder.Default
+  private BigDecimal originBalance = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
   // 리프레시 토큰 값을 설정하는 메서드 (토큰 재발급 시 사용)
   public void createRefreshToken(String refreshToken) {
