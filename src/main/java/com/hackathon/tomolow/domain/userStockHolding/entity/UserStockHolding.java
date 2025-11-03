@@ -58,7 +58,7 @@ public class UserStockHolding extends BaseTimeEntity {
   }
 
   /** 보유 수량 증가 (동일 종목을 추가 매수할 때, 평균단가를 가중평균으로 재계산) */
-  public void addQuantity(Long additionalQuantity, BigDecimal newBuyPrice) {
+  public void addQuantity(int additionalQuantity, BigDecimal newBuyPrice) {
     // 새로운 평균단가를 계산하는 간단한 로직 (가중평균)
     BigDecimal totalCost =
         avgPrice

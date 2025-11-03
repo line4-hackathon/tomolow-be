@@ -1,12 +1,9 @@
 package com.hackathon.tomolow.domain.transaction.entity;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -52,7 +49,6 @@ public class Transaction extends BaseTimeEntity {
   private User buyer; // 매수한 사용자
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "buyer_id", nullable = false)
+  @JoinColumn(name = "seller_id", nullable = false)
   private User seller; // 매도한 사용자
-
 }
