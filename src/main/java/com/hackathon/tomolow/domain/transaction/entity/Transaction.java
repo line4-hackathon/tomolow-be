@@ -37,24 +37,22 @@ public class Transaction extends BaseTimeEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(name = "created_at", nullable = false)
-  private LocalDateTime createdAt; // 거래 시각
-
   @Column(name = "quantity", nullable = false)
   private int quantity; // 거래 수량
 
   @Column(name = "price", nullable = false)
   private BigDecimal price;
 
-  @Enumerated(EnumType.STRING)
-  @Column(name = "trade_type", nullable = false)
-  private TradeType tradeType; // 매수 or 매도
-
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "stock_id", nullable = false)
   private Stock stock; // 거래한 주식
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user; // 거래한 사용자
+  @JoinColumn(name = "buyer_id", nullable = false)
+  private User buyer; // 매수한 사용자
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "buyer_id", nullable = false)
+  private User seller; // 매도한 사용자
+
 }
