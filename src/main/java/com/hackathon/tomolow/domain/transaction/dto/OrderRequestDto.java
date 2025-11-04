@@ -12,5 +12,4 @@ public class OrderRequestDto {
   @NotNull private int quantity;
 
   @NotNull private BigDecimal price;
-
 }
