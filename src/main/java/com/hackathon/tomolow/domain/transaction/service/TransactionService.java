@@ -33,7 +33,7 @@ public class TransactionService {
   private final MatchService matchService;
   private final UserStockHoldingRepository userStockHoldingRepository;
 
-  public void createBuyOrder(Long stockId, OrderRequestDto orderRequestDto) {
+  public String createBuyOrder(Long stockId, OrderRequestDto orderRequestDto) {
 
     Stock stock =
         stockRepository
@@ -68,9 +68,11 @@ public class TransactionService {
 
     // 매칭 시도
     matchService.match(String.valueOf(stockId));
+
+    return orderId;
   }
 
-  public void createSellOrder(Long stockId, OrderRequestDto orderRequestDto) {
+  public String createSellOrder(Long stockId, OrderRequestDto orderRequestDto) {
 
     Stock stock =
         stockRepository
@@ -88,7 +90,10 @@ public class TransactionService {
     UserStockHolding userStockHolding =
         userStockHoldingRepository
             .findByUserAndStock(user, stock)
-            .orElseThrow(() -> new CustomException(StockErrorCode.STOCK_NOT_FOUND));
+            .orElseThrow(
+                () ->
+                    new CustomException(
+                        StockErrorCode.STOCK_NOT_FOUND, "유저가 해당 종목을 보유하고 있지 않습니다."));
     if (userStockHolding.getQuantity() < orderRequestDto.getQuantity()) {
       throw new CustomException(UserStockHoldingErrorCode.INSUFFICIENT_QUANTITY);
     }
@@ -107,5 +112,7 @@ public class TransactionService {
 
     // 매칭 시도
     matchService.match(String.valueOf(stockId));
+
+    return orderId;
   }
 }
