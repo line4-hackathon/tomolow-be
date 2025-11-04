@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hackathon.tomolow.domain.auth.dto.request.LoginRequest;
 import com.hackathon.tomolow.domain.auth.dto.response.LoginResponse;
 import com.hackathon.tomolow.domain.auth.service.AuthService;
+import com.hackathon.tomolow.domain.user.dto.request.SignUpRequest;
+import com.hackathon.tomolow.domain.user.dto.response.SignUpResponse;
 import com.hackathon.tomolow.domain.user.exception.UserErrorCode;
 import com.hackathon.tomolow.domain.user.repository.UserRepository;
 import com.hackathon.tomolow.global.exception.CustomException;
@@ -22,21 +24,19 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
-@RestController // 해당 클래스가 REST API 컨트롤러임을 나타냄
-@RequiredArgsConstructor // final 필드를 매개변수로 받는 생성자 자동 생성
-@RequestMapping("/api/auths") // API 기본 경로 설정
-@Tag(name = "Auth", description = "Auth 관련 API") // Swagger 문서용 설명 태그
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/auth")
+@Tag(name = "Auth", description = "Auth 관련 API")
 public class AuthController {
 
-  private final AuthService authService; // 인증 서비스
-  private final UserRepository userRepository; // 사용자 정보 접근용 리포지토리
+  private final AuthService authService;
+  private final UserRepository userRepository;
 
   @Operation(summary = "사용자 로그인", description = "사용자 로그인을 위한 API")
-  @PostMapping("/login") // 로그인 요청을 처리하는 POST API
+  @PostMapping("/login")
   public ResponseEntity<BaseResponse<LoginResponse>> login(
-      @RequestBody @Valid LoginRequest loginRequest, // 로그인 요청 DTO
-      HttpServletResponse response // HTTP 응답 객체
-      ) {
+      @RequestBody @Valid LoginRequest loginRequest, HttpServletResponse response) {
     // 로그인 처리 서비스 호출
     LoginResponse loginResponse = authService.login(loginRequest);
 
@@ -59,5 +59,14 @@ public class AuthController {
 
     // 로그인 결과 응답 반환
     return ResponseEntity.ok(BaseResponse.success("로그인에 성공했습니다.", loginResponse));
+  }
+
+  @Operation(summary = "회원가입 API", description = "사용자 회원가입을 위한 API")
+  @PostMapping("/sign-up")
+  public ResponseEntity<BaseResponse<SignUpResponse>> signUp(
+      @RequestBody @Valid SignUpRequest signUpRequest) {
+    System.out.println(signUpRequest.getUsername() + ", " + signUpRequest.getPassword());
+    SignUpResponse signUpResponse = authService.signUp(signUpRequest);
+    return ResponseEntity.ok(BaseResponse.success("회원가입에 성공했습니다.", signUpResponse));
   }
 }

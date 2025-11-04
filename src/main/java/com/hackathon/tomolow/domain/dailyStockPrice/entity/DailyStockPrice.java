@@ -1,5 +1,6 @@
 package com.hackathon.tomolow.domain.dailyStockPrice.entity;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import jakarta.persistence.Column;
@@ -46,19 +47,19 @@ public class DailyStockPrice extends BaseTimeEntity {
 
   /** 시가 (open) */
   @Column(name = "open_price", nullable = false)
-  private int openPrice;
+  private BigDecimal openPrice;
 
   /** 고가 (high) */
   @Column(name = "high_price", nullable = false)
-  private int highPrice;
+  private BigDecimal highPrice;
 
   /** 저가 (low) */
   @Column(name = "low_price", nullable = false)
-  private int lowPrice;
+  private BigDecimal lowPrice;
 
   /** 종가 (close) */
   @Column(name = "close_price", nullable = false)
-  private int closePrice;
+  private BigDecimal closePrice;
 
   /** 종목 (Stock FK) */
   @ManyToOne(fetch = FetchType.LAZY)

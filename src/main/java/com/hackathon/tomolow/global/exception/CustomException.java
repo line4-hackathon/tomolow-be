@@ -13,4 +13,10 @@ public class CustomException extends RuntimeException {
     super(errorCode.getMessage());
     this.errorCode = errorCode;
   }
+
+  // 에러 메시지 커스텀
+  public CustomException(BaseErrorCode errorCode, String message) {
+    super(message);
+    this.errorCode = errorCode;
+  }
 }

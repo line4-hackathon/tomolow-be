@@ -77,10 +77,25 @@ services:
       - tomolow-network
     restart: always
 
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      retries: 10
+    networks:
+      - tomolow-network
+
 networks:
   tomolow-network:
     driver: bridge  # Docker 기본 브리지 네트워크를 사용
 
 volumes:
   mysql-data:  # 위에서 정의한 MySQL 데이터를 저장할 볼륨
+  redis-data:
   qdrant-data:
