@@ -2,7 +2,6 @@ package com.hackathon.tomolow.domain.transaction.service;
 
 import java.math.BigDecimal;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +20,7 @@ import com.hackathon.tomolow.domain.userStockHolding.repository.UserStockHolding
 import com.hackathon.tomolow.global.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
