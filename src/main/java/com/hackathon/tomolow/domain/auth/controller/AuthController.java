@@ -69,5 +69,4 @@ public class AuthController {
     SignUpResponse signUpResponse = authService.signUp(signUpRequest);
     return ResponseEntity.ok(BaseResponse.success("회원가입에 성공했습니다.", signUpResponse));
   }
-
 }
