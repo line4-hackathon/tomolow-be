@@ -9,10 +9,13 @@ import com.hackathon.tomolow.domain.transaction.entity.TradeType;
 import com.hackathon.tomolow.domain.transaction.exception.TransactionErrorCode;
 import com.hackathon.tomolow.global.exception.CustomException;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class OrderRedisService {
 
-  RedisTemplate<String, String> redisTemplate;
+  private final RedisTemplate<String, String> redisTemplate;
 
   private String buyKey(String stockId) {
     return "order:book:BUY:" + stockId;
@@ -90,4 +93,9 @@ public class OrderRedisService {
     redisTemplate.delete(detailKey(orderId));
   }
 
+  /** 전체 데이터 삭제 */
+  public void deleteAllOrders() {
+    var keys = redisTemplate.keys("order:*");
+    if (keys != null && !keys.isEmpty()) redisTemplate.delete(keys);
+  }
 }
