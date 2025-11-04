@@ -2,6 +2,7 @@ package com.hackathon.tomolow.domain.transaction.service;
 
 import java.math.BigDecimal;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MatchService {
 
   private final OrderRedisService orderRedisService;
@@ -92,7 +94,17 @@ public class MatchService {
       UserStockHolding buyUserStockHolding =
           userStockHoldingRepository
               .findByUserAndStock(buyUser, stock)
-              .orElseThrow(() -> new CustomException(UserStockHoldingErrorCode.HOLDING_NOT_FOUND));
+              .orElseGet(
+                  () -> {
+                    UserStockHolding newBuyUserStockHolding =
+                        UserStockHolding.builder()
+                            .stock(stock)
+                            .user(buyUser)
+                            .quantity(0L)
+                            .avgPrice(BigDecimal.ZERO)
+                            .build();
+                    return userStockHoldingRepository.save(newBuyUserStockHolding);
+                  });
       UserStockHolding sellUserStockHolding =
           userStockHoldingRepository
               .findByUserAndStock(sellUser, stock)
@@ -115,6 +127,7 @@ public class MatchService {
 
       // TODO: 9. 체결 정보를 웹소켓으로
 
+      log.info("거래 체결 - buyOrderId : " + buyOrderId + ", sellOrderId : " + sellOrderId);
     }
   }
 }
