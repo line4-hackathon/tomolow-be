@@ -12,6 +12,12 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - QDRANT_BASE_URL=http://qdrant:6333
       - JWT_SECRET=${JWT_SECRET}
+      - PROD_REDIS_HOST=${PROD_REDIS_HOST}
+      - PROD_REDIS_PORT=${PROD_REDIS_PORT}
+      - S3_BUCKET=${S3_BUCKET}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       # - OPENAPI_SERVICE_KEY=${OPENAPI_SERVICE_KEY}
     command:
       - java -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} -jar app.jar
