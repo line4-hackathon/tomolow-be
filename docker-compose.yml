@@ -19,6 +19,8 @@ services:
     depends_on:
       mysql: # 이 서비스가 mysql이 먼저 실행된 후 시작되도록
         condition: service_healthy # 이 서비스가 mysql이 먼저 실행된 후 시작되도록
+      redis:
+        condition: service_healthy
       qdrant:
         condition: service_started
     networks:
