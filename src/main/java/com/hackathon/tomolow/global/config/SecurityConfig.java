@@ -1,5 +1,6 @@
 package com.hackathon.tomolow.global.config;
 
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -29,7 +30,7 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http
-        // CSRF 보호 기능 비활성화 (REST API에서는 필요없음)
+        // CSRF 완전 비활성화 (JWT/Stateless 환경)
         .csrf(AbstractHttpConfigurer::disable)
         // CORS 설정 활성화(보통은 CORS 설정 활성화 하지 않음. 서버에서 NginX로 CORS 검증)
         .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
@@ -45,12 +46,24 @@ public class SecurityConfig {
                     // Preflight 전면 허용 (가장 위에!)
                     .requestMatchers(HttpMethod.OPTIONS, "/**")
                     .permitAll()
-                    // Swagger
+                    // WebSocket 핸드셰이크 & STOMP 브로커 경로 허용
+                    .requestMatchers("/ws/**", "/ws-sockjs/**", "/topic/**", "/queue/**", "/app/**")
+                    .permitAll()
+                    // Swagger 경로 인증 필요
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
                     .permitAll()
                     // 인증 없이 허용할 경로
-                    .requestMatchers("/api/auth/**")
+                    .requestMatchers("/api/auth/**", "/api/ticker/**")
                     .permitAll()
+                    // 정적 리소스 (공통 위치: /static, /public, /resources, /META-INF/resources)
+                    .requestMatchers(PathRequest.toStaticResources().atCommonLocations())
+                    .permitAll()
+                    // 우리가 쓰는 파일/경로 추가 허용
+                    .requestMatchers("/", "/index.html", "/test.html", "/favicon.ico")
+                    .permitAll()
+                    .requestMatchers("/js/**", "/css/**", "/images/**", "/webjars/**")
+                    .permitAll()
+
                     // 그 외 모든 요청은 모두 인증 필요
                     .anyRequest()
                     .authenticated())
