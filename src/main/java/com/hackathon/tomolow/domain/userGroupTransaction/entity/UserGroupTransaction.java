@@ -17,7 +17,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 
-import com.hackathon.tomolow.domain.stock.entity.Stock;
+import com.hackathon.tomolow.domain.market.entity.Market;
 import com.hackathon.tomolow.domain.transaction.entity.TradeType;
 import com.hackathon.tomolow.domain.userGroup.entity.UserGroup;
 import com.hackathon.tomolow.global.common.BaseTimeEntity;
@@ -37,7 +37,7 @@ import lombok.NoArgsConstructor;
     name = "user_group_transaction",
     indexes = {
       @Index(name = "idx_ugt_usergroup", columnList = "usergroup_id"),
-      @Index(name = "idx_ugt_stock", columnList = "stock_id"),
+      @Index(name = "idx_ugt_market", columnList = "market_id"),
       @Index(name = "idx_ugt_created_at", columnList = "created_at")
     })
 public class UserGroupTransaction extends BaseTimeEntity {
@@ -66,8 +66,8 @@ public class UserGroupTransaction extends BaseTimeEntity {
 
   /** 거래한 종목 */
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "stock_id", nullable = false)
-  private Stock stock;
+  @JoinColumn(name = "market_id", nullable = false)
+  private Market market;
 
   /* ===== 편의 메서드 ===== */
 
