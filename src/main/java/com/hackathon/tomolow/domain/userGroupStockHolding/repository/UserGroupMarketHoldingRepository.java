@@ -2,7 +2,7 @@ package com.hackathon.tomolow.domain.userGroupStockHolding.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.hackathon.tomolow.domain.userGroupStockHolding.entity.UserGroupStockHolding;
+import com.hackathon.tomolow.domain.userGroupStockHolding.entity.UserGroupMarketHolding;
 
-public interface UserGroupStockHoldingRepository
-    extends JpaRepository<UserGroupStockHolding, Long> {}
+public interface UserGroupMarketHoldingRepository
+    extends JpaRepository<UserGroupMarketHolding, Long> {}

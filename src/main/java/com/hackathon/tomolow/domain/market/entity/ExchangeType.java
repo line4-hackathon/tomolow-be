@@ -1,4 +1,4 @@
-package com.hackathon.tomolow.domain.stock.entity;
+package com.hackathon.tomolow.domain.market.entity;
 
 public enum ExchangeType {
   UPBIT, // ✅ 1순위 개발

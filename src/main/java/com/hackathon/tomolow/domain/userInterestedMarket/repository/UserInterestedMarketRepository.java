@@ -1,7 +1,7 @@
-package com.hackathon.tomolow.domain.userInterestedStock.repository;
+package com.hackathon.tomolow.domain.userInterestedMarket.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.hackathon.tomolow.domain.userInterestedStock.entity.UserInterestedStock;
+import com.hackathon.tomolow.domain.userInterestedMarket.entity.UserInterestedMarket;
 
-public interface UserInterestedStockRepository extends JpaRepository<UserInterestedStock, Long> {}
+public interface UserInterestedMarketRepository extends JpaRepository<UserInterestedMarket, Long> {}

@@ -1,4 +1,4 @@
-package com.hackathon.tomolow.domain.stock.entity;
+package com.hackathon.tomolow.domain.market.entity;
 
 public enum AssetType {
   STOCK, // 주식

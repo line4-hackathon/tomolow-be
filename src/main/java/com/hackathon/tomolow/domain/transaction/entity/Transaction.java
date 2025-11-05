@@ -12,7 +12,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-import com.hackathon.tomolow.domain.stock.entity.Stock;
+import com.hackathon.tomolow.domain.market.entity.Market;
 import com.hackathon.tomolow.domain.user.entity.User;
 import com.hackathon.tomolow.global.common.BaseTimeEntity;
 
@@ -41,8 +41,8 @@ public class Transaction extends BaseTimeEntity {
   private BigDecimal price;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "stock_id", nullable = false)
-  private Stock stock; // 거래한 주식
+  @JoinColumn(name = "market_id", nullable = false)
+  private Market market; // 거래한 종목
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "buyer_id", nullable = false)

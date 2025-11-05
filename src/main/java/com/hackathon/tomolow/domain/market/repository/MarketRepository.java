@@ -1,7 +1,7 @@
-package com.hackathon.tomolow.domain.stock.repository;
+package com.hackathon.tomolow.domain.market.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.hackathon.tomolow.domain.stock.entity.Stock;
+import com.hackathon.tomolow.domain.market.entity.Market;
 
-public interface StockRepository extends JpaRepository<Stock, Long> {}
+public interface MarketRepository extends JpaRepository<Market, Long> {}

@@ -15,7 +15,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
-import com.hackathon.tomolow.domain.stock.entity.Stock;
+import com.hackathon.tomolow.domain.market.entity.Market;
 import com.hackathon.tomolow.global.common.BaseTimeEntity;
 
 import lombok.AccessLevel;
@@ -33,11 +33,11 @@ import lombok.NoArgsConstructor;
     name = "candle",
     uniqueConstraints = {
       @UniqueConstraint(
-          name = "uk_candle_stock_start_interval",
-          columnNames = {"stock_id", "start_time", "interval_min"})
+          name = "uk_candle_market_start_interval",
+          columnNames = {"market_id", "start_time", "interval_min"})
     },
     indexes = {
-      @Index(name = "idx_candle_stock_start", columnList = "stock_id,start_time"),
+      @Index(name = "idx_candle_market_start", columnList = "market_id,start_time"),
       @Index(name = "idx_candle_interval", columnList = "interval_min")
     })
 public class Candle extends BaseTimeEntity {
@@ -48,8 +48,8 @@ public class Candle extends BaseTimeEntity {
 
   /** 종목 (FK) */
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "stock_id", nullable = false)
-  private Stock stock;
+  @JoinColumn(name = "market_id", nullable = false)
+  private Market market;
 
   /** 캔들의 시작 시간 (예: 2025-11-04T02:40:00) */
   @Column(name = "start_time", nullable = false)
