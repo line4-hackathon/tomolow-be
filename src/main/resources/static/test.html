@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <title>STOMP 실시간 시세 테스트</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+
+  <!-- 정적 리소스: /src/main/resources/static/js/...  -->
+  <script src="/js/sockjs.min.js"></script>
+  <script src="/js/stomp.umd.min.js"></script>
+
+  <style>
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, "Apple SD Gothic Neo", Pretendard, sans-serif;
+      background: #fafafa;
+      margin: 0;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 880px
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 22px
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+      align-items: center
+    }
+
+    input, button, select {
+      height: 36px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid #ddd
+    }
+
+    button {
+      cursor: pointer;
+      background: #111;
+      color: #fff;
+      border: none
+    }
+
+    button.sec {
+      background: #eee;
+      color: #111;
+      border: 1px solid #ddd
+    }
+
+    .status {
+      margin-left: 8px
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px 18px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .08)
+    }
+
+    .name {
+      font-weight: 700;
+      margin-bottom: 6px;
+      font-size: 18px
+    }
+
+    .code {
+      color: #888;
+      font-weight: 400;
+      margin-left: 4px
+    }
+
+    .price {
+      font-size: 34px;
+      font-weight: 800;
+      margin: 2px 0 6px
+    }
+
+    .sub {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 4px
+    }
+
+    .time {
+      font-size: 12px;
+      color: #999;
+      text-align: right;
+      margin-top: 4px
+    }
+
+    .up {
+      color: #d93025
+    }
+
+    .down {
+      color: #0d904f
+    }
+
+    pre#log {
+      background: #0b1020;
+      color: #cde2ff;
+      padding: 12px;
+      border-radius: 12px;
+      height: 200px;
+      overflow: auto
+    }
+
+    .pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid #ddd;
+      background: #fff;
+      color: #333
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>STOMP 실시간 시세 테스트 (/topic/ticker/{market})</h1>
+
+  <div class="row">
+    <label>마켓:</label>
+    <select id="market">
+      <option value="KRW-BTC">KRW-BTC (비트코인)</option>
+      <option value="KRW-ETH">KRW-ETH (이더리움)</option>
+    </select>
+
+    <button id="btnConnectWs">Connect (Native WS)</button>
+    <button id="btnConnectSock">Connect (SockJS)</button>
+    <button id="btnSubscribe">Subscribe</button>
+    <button id="btnDisconnect" class="sec">Disconnect</button>
+
+    <span id="status" class="status">🔴 미연결</span>
+    <span id="transport" class="pill">transport: -</span>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="name" id="name">비트코인 <span class="code" id="code">(KRW-BTC)</span></div>
+      <div id="price" class="price">-</div>
+      <div id="change" class="sub">전일대비 -</div>
+      <div id="vol" class="sub">누적 거래량(24h): -</div>
+      <div id="time" class="time"></div>
+    </div>
+  </div>
+
+  <h3>로그</h3>
+  <pre id="log"></pre>
+</div>
+
+<script>
+  // ====== 환경별 자동 URL (배포/로컬 공통) ======
+  const WS_NATIVE_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host
+      + '/ws';
+  const SOCKJS_FULL_URL = location.origin + '/ws-sockjs';
+
+  let client = null;
+  let currentSub = null;
+  let currentTransport = "-";
+
+  // ====== DOM/유틸 ======
+  const el = (id) => document.getElementById(id);
+  const log = (m) => {
+    const p = el('log');
+    p.textContent += m + "\n";
+    p.scrollTop = p.scrollHeight;
+  };
+  const setStatus = (ok) => el('status').textContent = ok ? '🟢 연결됨' : '🔴 미연결';
+  const setTransport = (t) => {
+    currentTransport = t;
+    el('transport').textContent = 'transport: ' + t;
+  };
+  const fmtPrice = (n) => Number(n ?? 0).toLocaleString('ko-KR');
+  const fmtPct = (n) => `${n >= 0 ? '+' : ''}${(Number(n) * 100).toFixed(2)}%`;
+  const fmtVol = (n) => Number(n ?? 0).toFixed(4);
+
+  // ====== STOMP/SockJS 전역 ======
+  const STOMP = window.StompJs || window.Stomp;
+  const SockJSGlobal = window.SockJS || window.sockjs;
+
+  if (!STOMP) {
+    log("❌ STOMP 라이브러리를 불러오지 못했습니다. /js/stomp.umd.min.js 확인");
+  }
+
+  // ====== 클라이언트 팩토리 ======
+  function createClientNative() {
+    return new STOMP.Client({
+      brokerURL: WS_NATIVE_URL,
+      reconnectDelay: 2000,
+      debug: (m) => log(m),
+      onConnect: () => {
+        setStatus(true);
+        setTransport('native');
+        log('✅ STOMP CONNECTED (native)');
+      },
+      onDisconnect: () => {
+        setStatus(false);
+        log('🔻 DISCONNECTED');
+      },
+      onStompError: (frame) => {
+        log('❌ STOMP ERROR: ' + (frame.headers?.message || ''));
+        log(frame.body || '');
+      },
+      onWebSocketError: (e) => log('❌ WS ERROR: ' + (e?.message || e)),
+    });
+  }
+
+  function createClientSockJS() {
+    if (!SockJSGlobal) {
+      log("❌ SockJS 라이브러리를 불러오지 못했습니다. /js/sockjs.min.js 확인");
+      return null;
+    }
+    return new STOMP.Client({
+      webSocketFactory: () => new SockJSGlobal(SOCKJS_FULL_URL),
+      reconnectDelay: 2000,
+      debug: (m) => log(m),
+      onConnect: () => {
+        setStatus(true);
+        setTransport('sockjs');
+        log('✅ STOMP CONNECTED (sockjs)');
+      },
+      onDisconnect: () => {
+        setStatus(false);
+        log('🔻 DISCONNECTED');
+      },
+      onStompError: (frame) => {
+        log('❌ STOMP ERROR: ' + (frame.headers?.message || ''));
+        log(frame.body || '');
+      },
+      onWebSocketError: (e) => log('❌ WS ERROR: ' + (e?.message || e)),
+    });
+  }
+
+  // ====== 액션 ======
+  function connectNative() {
+    if (!STOMP) {
+      return;
+    }
+    if (client?.active) {
+      client.deactivate();
+    }
+    client = createClientNative();
+    client.activate();
+  }
+
+  function connectSockJS() {
+    if (!STOMP) {
+      return;
+    }
+    if (client?.active) {
+      client.deactivate();
+    }
+    client = createClientSockJS();
+    client?.activate();
+  }
+
+  function subscribeMarket(market) {
+    if (!client || !client.active) {
+      log('⚠️ 먼저 Connect 버튼으로 연결하세요');
+      return;
+    }
+    if (currentSub) {
+      currentSub.unsubscribe();
+      currentSub = null;
+    }
+
+    // 카드 초기화
+    el('name').innerHTML = (market === 'KRW-ETH' ? '이더리움' : '비트코인')
+        + ' <span class="code" id="code">(' + market + ')</span>';
+    el('price').textContent = '-';
+    el('change').textContent = '전일대비 -';
+    el('vol').textContent = '누적 거래량(24h): -';
+    el('time').textContent = '';
+
+    currentSub = client.subscribe('/topic/ticker/' + market, (msg) => {
+      try {
+        const t = JSON.parse(msg.body);
+        el('price').textContent = fmtPrice(t.tradePrice) + ' 원';
+        const up = (t.changeRate ?? 0) >= 0;
+        el('change').textContent = '전일대비 ' + fmtPct(t.changeRate);
+        el('change').className = 'sub ' + (up ? 'up' : 'down');
+        el('price').className = 'price ' + (up ? 'up' : 'down');
+        el('vol').textContent = '누적 거래량(24h): ' + fmtVol(t.accVolume);
+        el('time').textContent = new Date(t.tradeTimestamp).toLocaleTimeString();
+      } catch (e) {
+        log('parse error: ' + e.message);
+      }
+    }, {id: 'sub-' + market});
+
+    log('🧷 SUBSCRIBED: /topic/ticker/' + market + ' (' + currentTransport + ')');
+  }
+
+  // ====== 버튼 바인딩 ======
+  el('btnConnectWs').onclick = connectNative;
+  el('btnConnectSock').onclick = connectSockJS;
+  el('btnSubscribe').onclick = () => subscribeMarket(el('market').value);
+  el('btnDisconnect').onclick = () => client?.deactivate();
+</script>
+</body>
+</html>

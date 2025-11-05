@@ -58,6 +58,17 @@ dependencies {
 
     // AWS S3
     implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
+
+    // WebSocket
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    implementation 'org.springframework:spring-messaging'
+
+    // 외부 API 통신용 (Upbit 등)
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+
+    // JSON 직렬화/역직렬화 (Spring Boot 기본 포함이지만 명시해도 무방)
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.module:jackson-module-parameter-names'
 }
 
 tasks.named('compileJava') {

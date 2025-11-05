@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.hackathon.tomolow.global.exception.model.BaseErrorCode;
 import com.hackathon.tomolow.global.response.BaseResponse;
@@ -44,5 +45,23 @@ public class GlobalExceptionHandler {
     log.error("Server 오류 발생: ", ex);
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
         .body(BaseResponse.error(500, "예상치 못한 서버 오류가 발생했습니다."));
+  }
+
+  // + 정적 리소스 404 특화 핸들러
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<?> handleNoResource(NoResourceFoundException ex) {
+    String path = ex.getResourcePath();
+
+    // 소스맵(.map)은 개발 편의용이라 없다고 에러로 시끄럽게 하지 않음
+    if (path != null && (path.endsWith(".map") || path.contains(".map?"))) {
+      log.debug("Ignore missing source map: {}", path);
+      // 바디 없이 404만 반환 (콘솔 오염 방지)
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    }
+
+    // 그 외 정적 리소스 404는 표준 에러 바디로
+    log.warn("Static resource not found: {}", path);
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        .body(BaseResponse.error(404, "요청한 정적 리소스를 찾을 수 없습니다."));
   }
 }

@@ -1,5 +1,6 @@
 package com.hackathon.tomolow.domain.stock.entity;
 
+import com.hackathon.tomolow.global.common.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -8,9 +9,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
-import com.hackathon.tomolow.global.common.BaseTimeEntity;
-
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,16 +30,16 @@ public class Stock extends BaseTimeEntity {
   @Column(name = "name", nullable = false)
   private String name; // 주식명
 
-  @Column(name = "code", nullable = false, unique = true)
-  private String code; // 주식 코드 (예: AAPL, TSLA 등)
+  @Column(name = "symbol", nullable = false, unique = true)
+  private String symbol; // 주식 코드 (예: AAPL, TSLA 등)
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "market_type", nullable = false)
-  private MarketType marketType; // 거래 시장 (예: CRYPTO, KOSPI, NASDAQ, NYSE 등)
+  @Column(name = "asset_type", nullable = false)
+  private AssetType assetType; // 거래 시장 (예: CRYPTO, STOCK)
 
   @Enumerated(EnumType.STRING)
   @Column(name = "exchange_type", nullable = false)
-  private ExchangeType exchangeType; // 거래소 이름 (예: Upbit, Binance, Coinbase)
+  private ExchangeType exchangeType; // 거래소 이름 (예: Upbit, Binance, Coinbase, Nasdaq)
 
   @Column(name = "img_url")
   private String imgUrl; // 주식 이미지 (nullable)

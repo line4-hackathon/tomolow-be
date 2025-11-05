@@ -1,7 +1,10 @@
 package com.hackathon.tomolow.domain.userStockHolding.entity;
 
-import java.math.BigDecimal;
-
+import com.hackathon.tomolow.domain.market.entity.Market;
+import com.hackathon.tomolow.domain.user.entity.User;
+import com.hackathon.tomolow.domain.userStockHolding.exception.UserStockHoldingErrorCode;
+import com.hackathon.tomolow.global.common.BaseTimeEntity;
+import com.hackathon.tomolow.global.exception.CustomException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -11,13 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-
-import com.hackathon.tomolow.domain.stock.entity.Stock;
-import com.hackathon.tomolow.domain.user.entity.User;
-import com.hackathon.tomolow.domain.userStockHolding.exception.UserStockHoldingErrorCode;
-import com.hackathon.tomolow.global.common.BaseTimeEntity;
-import com.hackathon.tomolow.global.exception.CustomException;
-
+import java.math.BigDecimal;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,7 +35,7 @@ public class UserStockHolding extends BaseTimeEntity {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "stock_id", nullable = false)
-  private Stock stock; // 주식 (Stock FK)
+  private Market stock; // 주식 (Stock FK)
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
@@ -52,12 +49,16 @@ public class UserStockHolding extends BaseTimeEntity {
 
   // ==== 계산용 메서드 ==== //
 
-  /** 총 매입 금액 = 평균단가 × 수량 현재 주식에 투자된 총 금액 계산 (avgPrice × quantity) */
+  /**
+   * 총 매입 금액 = 평균단가 × 수량 현재 주식에 투자된 총 금액 계산 (avgPrice × quantity)
+   */
   public BigDecimal getTotalInvestment() {
     return avgPrice.multiply(BigDecimal.valueOf(quantity));
   }
 
-  /** 보유 수량 증가 (동일 종목을 추가 매수할 때, 평균단가를 가중평균으로 재계산) */
+  /**
+   * 보유 수량 증가 (동일 종목을 추가 매수할 때, 평균단가를 가중평균으로 재계산)
+   */
   public void addQuantity(int additionalQuantity, BigDecimal newBuyPrice) {
     // 새로운 평균단가를 계산하는 간단한 로직 (가중평균)
     BigDecimal totalCost =
@@ -69,7 +70,9 @@ public class UserStockHolding extends BaseTimeEntity {
         totalCost.divide(BigDecimal.valueOf(this.quantity), 2, BigDecimal.ROUND_HALF_UP);
   }
 
-  /** 수량 차감 (매도 시) 매도 시 수량 차감, 예외 처리 포함 */
+  /**
+   * 수량 차감 (매도 시) 매도 시 수량 차감, 예외 처리 포함
+   */
   public void subtractQuantity(int sellQuantity) {
     if (sellQuantity > this.quantity) {
       throw new CustomException(UserStockHoldingErrorCode.INSUFFICIENT_QUANTITY);
