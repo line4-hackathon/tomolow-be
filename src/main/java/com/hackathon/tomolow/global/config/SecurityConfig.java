@@ -55,6 +55,9 @@ public class SecurityConfig {
                     // 인증 없이 허용할 경로
                     .requestMatchers("/api/auth/**", "/api/ticker/**")
                     .permitAll()
+                    // 개발자 전용 API — 지금은 임시로 공개
+                    .requestMatchers("/api/dev/**")
+                    .permitAll()
                     // 정적 리소스 (공통 위치: /static, /public, /resources, /META-INF/resources)
                     .requestMatchers(PathRequest.toStaticResources().atCommonLocations())
                     .permitAll()
