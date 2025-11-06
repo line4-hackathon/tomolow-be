@@ -37,6 +37,9 @@ public class Transaction extends BaseTimeEntity {
   @Column(name = "quantity", nullable = false)
   private int quantity; // 거래 수량
 
+  @Column(name = "trade_type", nullable = false)
+  private TradeType tradeType;
+
   @Column(name = "price", nullable = false)
   private BigDecimal price;
 
@@ -45,10 +48,6 @@ public class Transaction extends BaseTimeEntity {
   private Market market; // 거래한 종목
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "buyer_id", nullable = false)
-  private User buyer; // 매수한 사용자
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "seller_id", nullable = false)
-  private User seller; // 매도한 사용자
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
 }
