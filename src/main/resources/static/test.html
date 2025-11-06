@@ -5,7 +5,7 @@
   <title>STOMP 실시간 시세 테스트</title>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
 
-  <!-- 정적 리소스: /src/main/resources/static/js/...  -->
+  <!-- 정적 리소스: /src/main/resources/static/js/... -->
   <script src="/js/sockjs.min.js"></script>
   <script src="/js/stomp.umd.min.js"></script>
 
@@ -142,6 +142,12 @@
     <select id="market">
       <option value="KRW-BTC">KRW-BTC (비트코인)</option>
       <option value="KRW-ETH">KRW-ETH (이더리움)</option>
+      <option value="KRW-XRP">KRW-XRP (리플)</option>
+      <option value="KRW-ADA">KRW-ADA (에이다)</option>
+      <option value="KRW-SOL">KRW-SOL (솔라나)</option>
+      <option value="KRW-DOT">KRW-DOT (폴카닷)</option>
+      <option value="KRW-DOGE">KRW-DOGE (도지코인)</option>
+      <option value="KRW-LINK">KRW-LINK (체인링크)</option>
     </select>
 
     <button id="btnConnectWs">Connect (Native WS)</button>
@@ -158,6 +164,7 @@
       <div class="name" id="name">비트코인 <span class="code" id="code">(KRW-BTC)</span></div>
       <div id="price" class="price">-</div>
       <div id="change" class="sub">전일대비 -</div>
+      <div id="prev" class="sub">전일 종가: -</div>
       <div id="vol" class="sub">누적 거래량(24h): -</div>
       <div id="time" class="time"></div>
     </div>
@@ -168,7 +175,7 @@
 </div>
 
 <script>
-  // ====== 환경별 자동 URL (배포/로컬 공통) ======
+  // ====== 환경별 자동 URL ======
   const WS_NATIVE_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host
       + '/ws';
   const SOCKJS_FULL_URL = location.origin + '/ws-sockjs';
@@ -189,19 +196,19 @@
     currentTransport = t;
     el('transport').textContent = 'transport: ' + t;
   };
+
   const fmtPrice = (n) => Number(n ?? 0).toLocaleString('ko-KR');
-  const fmtPct = (n) => `${n >= 0 ? '+' : ''}${(Number(n) * 100).toFixed(2)}%`;
+  const fmtPct = (n) => `${(Number(n) >= 0 ? '+' : '')}${(Number(n) * 100).toFixed(2)}%`;
+  const fmtWon = (n) => `${(Number(n) >= 0 ? '+' : '')}${Number(n ?? 0).toLocaleString('ko-KR')}원`;
   const fmtVol = (n) => Number(n ?? 0).toFixed(4);
 
-  // ====== STOMP/SockJS 전역 ======
+  // ====== STOMP/SockJS ======
   const STOMP = window.StompJs || window.Stomp;
   const SockJSGlobal = window.SockJS || window.sockjs;
-
   if (!STOMP) {
     log("❌ STOMP 라이브러리를 불러오지 못했습니다. /js/stomp.umd.min.js 확인");
   }
 
-  // ====== 클라이언트 팩토리 ======
   function createClientNative() {
     return new STOMP.Client({
       brokerURL: WS_NATIVE_URL,
@@ -216,9 +223,9 @@
         setStatus(false);
         log('🔻 DISCONNECTED');
       },
-      onStompError: (frame) => {
-        log('❌ STOMP ERROR: ' + (frame.headers?.message || ''));
-        log(frame.body || '');
+      onStompError: (f) => {
+        log('❌ STOMP ERROR: ' + (f.headers?.message || ''));
+        log(f.body || '');
       },
       onWebSocketError: (e) => log('❌ WS ERROR: ' + (e?.message || e)),
     });
@@ -242,15 +249,14 @@
         setStatus(false);
         log('🔻 DISCONNECTED');
       },
-      onStompError: (frame) => {
-        log('❌ STOMP ERROR: ' + (frame.headers?.message || ''));
-        log(frame.body || '');
+      onStompError: (f) => {
+        log('❌ STOMP ERROR: ' + (f.headers?.message || ''));
+        log(f.body || '');
       },
       onWebSocketError: (e) => log('❌ WS ERROR: ' + (e?.message || e)),
     });
   }
 
-  // ====== 액션 ======
   function connectNative() {
     if (!STOMP) {
       return;
@@ -283,22 +289,34 @@
       currentSub = null;
     }
 
-    // 카드 초기화
-    el('name').innerHTML = (market === 'KRW-ETH' ? '이더리움' : '비트코인')
-        + ' <span class="code" id="code">(' + market + ')</span>';
+    // UI 초기화 (이름은 서버 값 오기 전 임시값)
+    const fallbackName = market === 'KRW-ETH' ? '이더리움' : (market === 'KRW-BTC' ? '비트코인' : market);
+    el('name').innerHTML = fallbackName + ' <span class="code" id="code">(' + market + ')</span>';
     el('price').textContent = '-';
     el('change').textContent = '전일대비 -';
+    el('change').className = 'sub';
+    el('prev').textContent = '전일 종가: -';
     el('vol').textContent = '누적 거래량(24h): -';
     el('time').textContent = '';
 
     currentSub = client.subscribe('/topic/ticker/' + market, (msg) => {
       try {
         const t = JSON.parse(msg.body);
+        // 새 필드들 반영: marketName, changePrice, prevClose
+        const name = t.marketName || fallbackName;
+        el('name').innerHTML = `${name} <span class="code" id="code">(${t.market
+        || market})</span>`;
+
         el('price').textContent = fmtPrice(t.tradePrice) + ' 원';
-        const up = (t.changeRate ?? 0) >= 0;
-        el('change').textContent = '전일대비 ' + fmtPct(t.changeRate);
-        el('change').className = 'sub ' + (up ? 'up' : 'down');
-        el('price').className = 'price ' + (up ? 'up' : 'down');
+        const isUp = Number(t.changeRate ?? 0) >= 0;
+        el('price').className = 'price ' + (isUp ? 'up' : 'down');
+
+        // 전일대비: +8,700원 (+10.50%)
+        const changeText = `${fmtWon(t.changePrice)} (${fmtPct(t.changeRate)})`;
+        el('change').textContent = '전일대비 ' + changeText;
+        el('change').className = 'sub ' + (isUp ? 'up' : 'down');
+
+        el('prev').textContent = '전일 종가: ' + fmtPrice(t.prevClose) + ' 원';
         el('vol').textContent = '누적 거래량(24h): ' + fmtVol(t.accVolume);
         el('time').textContent = new Date(t.tradeTimestamp).toLocaleTimeString();
       } catch (e) {
@@ -309,11 +327,12 @@
     log('🧷 SUBSCRIBED: /topic/ticker/' + market + ' (' + currentTransport + ')');
   }
 
-  // ====== 버튼 바인딩 ======
-  el('btnConnectWs').onclick = connectNative;
-  el('btnConnectSock').onclick = connectSockJS;
-  el('btnSubscribe').onclick = () => subscribeMarket(el('market').value);
-  el('btnDisconnect').onclick = () => client?.deactivate();
+  // 버튼 바인딩
+  document.getElementById('btnConnectWs').onclick = connectNative;
+  document.getElementById('btnConnectSock').onclick = connectSockJS;
+  document.getElementById('btnSubscribe').onclick = () => subscribeMarket(
+      document.getElementById('market').value);
+  document.getElementById('btnDisconnect').onclick = () => client?.deactivate();
 </script>
 </body>
 </html>
