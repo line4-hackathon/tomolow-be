@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hackathon.tomolow.domain.transaction.dto.OrderRequestDto;
-import com.hackathon.tomolow.domain.transaction.service.TransactionService;
+import com.hackathon.tomolow.domain.transaction.service.LimitTransactionService;
 import com.hackathon.tomolow.global.response.BaseResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,21 +23,21 @@ import lombok.RequiredArgsConstructor;
 @Tag(name = "Buy/Sell", description = "개인 매수/매도 관련 API")
 public class TransactionController {
 
-  private final TransactionService transactionService;
+  private final LimitTransactionService limitTransactionService;
 
-  @PostMapping("/buy/{marketId}")
-  @Operation(summary = "매도", description = "매도를 위한 API")
-  public ResponseEntity<BaseResponse<?>> buyOrder(
+  @PostMapping("/buy/limit/{marketId}")
+  @Operation(summary = "지정가 매도", description = "지정가 매도를 위한 API")
+  public ResponseEntity<BaseResponse<?>> limitBuyOrder(
       @PathVariable Long marketId, @Valid @RequestBody OrderRequestDto orderRequestDto) {
-    String buyOrderId = transactionService.createBuyOrder(marketId, orderRequestDto);
+    String buyOrderId = limitTransactionService.limitBuy(marketId, orderRequestDto);
     return ResponseEntity.ok(BaseResponse.success(buyOrderId));
   }
 
-  @PostMapping("/sell/{marketId}")
-  @Operation(summary = "매수", description = "매수를 위한 API")
-  public ResponseEntity<BaseResponse<?>> sellOrder(
+  @PostMapping("/sell/limit/{marketId}")
+  @Operation(summary = "지정가 매수", description = "지정가 매수를 위한 API")
+  public ResponseEntity<BaseResponse<?>> limitSellOrder(
       @PathVariable Long marketId, @Valid @RequestBody OrderRequestDto orderRequestDto) {
-    String sellOrderId = transactionService.createSellOrder(marketId, orderRequestDto);
+    String sellOrderId = limitTransactionService.limitSell(marketId, orderRequestDto);
     return ResponseEntity.ok(BaseResponse.success(sellOrderId));
   }
 }
