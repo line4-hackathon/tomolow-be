@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.hackathon.tomolow.domain.market.entity.Market;
 import com.hackathon.tomolow.domain.market.exception.MarketErrorCode;
 import com.hackathon.tomolow.domain.market.repository.MarketRepository;
+import com.hackathon.tomolow.domain.market.service.MarketService;
 import com.hackathon.tomolow.domain.transaction.dto.OrderRequestDto;
 import com.hackathon.tomolow.domain.transaction.entity.TradeType;
 import com.hackathon.tomolow.domain.transaction.exception.TransactionErrorCode;
@@ -24,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class TransactionService {
+public class LimitTransactionService {
 
   private final MarketRepository marketRepository;
   private final SecurityUtil securityUtil;
@@ -32,8 +33,13 @@ public class TransactionService {
   private final OrderRedisService orderRedisService;
   private final MatchService matchService;
   private final UserMarketHoldingRepository userMarketHoldingRepository;
+  private final MarketService marketService;
 
-  public String createBuyOrder(Long marketId, OrderRequestDto orderRequestDto) {
+  /** 지정가 매수 */
+  public String limitBuy(Long marketId, OrderRequestDto orderRequestDto) {
+    // TODO : 현재 시장가 불러오기
+    // BigDecimal marketPrice = 현재 시장가 불러오는 메서드.
+    BigDecimal marketPrice = new BigDecimal(10000); // 이 코드 삭제
 
     Market market =
         marketRepository
@@ -67,12 +73,16 @@ public class TransactionService {
         currentUserId.toString());
 
     // 매칭 시도
-    matchService.match(String.valueOf(marketId));
+    matchService.matchByMarketPrice(String.valueOf(marketId), marketPrice);
 
     return orderId;
   }
 
-  public String createSellOrder(Long marketId, OrderRequestDto orderRequestDto) {
+  /** 지정가 매도 */
+  public String limitSell(Long marketId, OrderRequestDto orderRequestDto) {
+    // TODO : 현재 시장가 불러오기
+    // BigDecimal marketPrice = 현재 시장가 불러오는 메서드
+    BigDecimal marketPrice = new BigDecimal(10000); // 이 코드 삭제
 
     Market market =
         marketRepository
@@ -93,7 +103,7 @@ public class TransactionService {
             .orElseThrow(
                 () ->
                     new CustomException(
-                        MarketErrorCode.MARKET_NOT_FOUND, "유저가 해당 종목을 보유하고 있지 않습니다."));
+                        UserMarketHoldingErrorCode.HOLDING_NOT_FOUND, "유저가 해당 종목을 보유하고 있지 않습니다."));
     if (userMarketHolding.getQuantity() < orderRequestDto.getQuantity()) {
       throw new CustomException(UserMarketHoldingErrorCode.INSUFFICIENT_QUANTITY);
     }
@@ -111,7 +121,7 @@ public class TransactionService {
         currentUserId.toString());
 
     // 매칭 시도
-    matchService.match(String.valueOf(marketId));
+    matchService.matchByMarketPrice(String.valueOf(marketId), marketPrice);
 
     return orderId;
   }
