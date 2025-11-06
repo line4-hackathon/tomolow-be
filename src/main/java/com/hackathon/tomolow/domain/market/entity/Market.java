@@ -45,4 +45,21 @@ public class Market extends BaseTimeEntity {
 
   @Column(name = "img_url")
   private String imgUrl; // 주식 이미지 (nullable)
+
+  // set methods
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public void setImgUrl(String imgUrl) {
+    this.imgUrl = imgUrl;
+  }
+
+  public void setAssetType(AssetType assetType) {
+    this.assetType = assetType;
+  }
+
+  public void setExchangeType(ExchangeType exchangeType) {
+    this.exchangeType = exchangeType;
+  }
 }

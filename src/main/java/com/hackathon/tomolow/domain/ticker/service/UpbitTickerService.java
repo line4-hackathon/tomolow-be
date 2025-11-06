@@ -1,20 +1,25 @@
 package com.hackathon.tomolow.domain.ticker.service;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hackathon.tomolow.domain.market.entity.ExchangeType;
+import com.hackathon.tomolow.domain.market.entity.Market;
+import com.hackathon.tomolow.domain.market.repository.MarketRepository;
 import com.hackathon.tomolow.domain.ticker.dto.TickerMessage;
 import com.hackathon.tomolow.global.redis.RedisUtil;
 
@@ -26,7 +31,6 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
-import okio.ByteString;
 
 @Slf4j
 @Service
@@ -36,10 +40,13 @@ public class UpbitTickerService {
   private final ObjectMapper om = new ObjectMapper();
   private final SimpMessagingTemplate messagingTemplate;
   private final RedisUtil redisUtil;
+  private final MarketRepository marketRepository;
 
-  // 구독할 마켓 목록(쉼표로 구분) 예: "KRW-BTC,KRW-ETH,KRW-XRP"
-  @Value("${upbit.markets:KRW-BTC,KRW-ETH}")
-  private String markets;
+  // 심볼→이름 캐시
+  private final Map<String, String> nameCache = new ConcurrentHashMap<>();
+
+  // 현재 구독 중인 코드 집합(변경 감지용)
+  private volatile Set<String> subscribedCodes = ConcurrentHashMap.newKeySet();
 
   private OkHttpClient client;
   private WebSocket webSocket;
@@ -47,12 +54,15 @@ public class UpbitTickerService {
   private static final String UPBIT_WS_URL = "wss://api.upbit.com/websocket/v1";
   private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
+  // 업비트에 한 번에 너무 많은 코드를 보내지 않도록 배치로 전송 (안전하게 80개 단위)
+  private static final int SUBSCRIBE_BATCH_SIZE = 80;
+
   @PostConstruct
   public void connect() {
     client =
         new OkHttpClient.Builder()
             .pingInterval(15, TimeUnit.SECONDS)
-            .readTimeout(0, TimeUnit.MILLISECONDS) // stream
+            .readTimeout(0, TimeUnit.MILLISECONDS)
             .build();
 
     Request request = new Request.Builder().url(UPBIT_WS_URL).build();
@@ -63,28 +73,30 @@ public class UpbitTickerService {
               @Override
               public void onOpen(WebSocket webSocket, Response response) {
                 log.info("Connected to Upbit WS: {}", response);
-                sendSubscribePayload(webSocket);
+                // DB에서 코드 읽어와 구독
+                List<String> codes = loadUpbitCodesFromDB();
+                subscribeCodes(webSocket, codes);
+                subscribedCodes = new HashSet<>(codes);
               }
 
               @Override
-              public void onMessage(WebSocket webSocket, String text) {
-                // Upbit는 바이너리로도 내려오지만, 혹시 텍스트 오면 방어
+              public void onMessage(WebSocket ws, String text) {
                 handleMessage(text.getBytes());
               }
 
               @Override
-              public void onMessage(WebSocket webSocket, ByteString bytes) {
+              public void onMessage(WebSocket ws, okio.ByteString bytes) {
                 handleMessage(bytes.toByteArray());
               }
 
               @Override
-              public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+              public void onFailure(WebSocket ws, Throwable t, Response resp) {
                 log.error("Upbit WS failure", t);
                 reconnect();
               }
 
               @Override
-              public void onClosed(WebSocket webSocket, int code, String reason) {
+              public void onClosed(WebSocket ws, int code, String reason) {
                 log.warn("Upbit WS closed: {} {}", code, reason);
                 reconnect();
               }
@@ -105,7 +117,6 @@ public class UpbitTickerService {
   }
 
   private void reconnect() {
-    // 간단 재연결 백오프
     try {
       Thread.sleep(2000L);
     } catch (InterruptedException ignored) {
@@ -113,47 +124,71 @@ public class UpbitTickerService {
     connect();
   }
 
-  private void sendSubscribePayload(WebSocket ws) {
-    try {
-      // Upbit 구독 포맷: [ {ticket}, {type:"ticker","codes":[...]} ]
-      var ticket = Map.of("ticket", "tomolow-" + System.currentTimeMillis());
-      var codeList =
-          Stream.of(markets.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList();
-      var tickerReq = Map.of("type", "ticker", "codes", codeList);
-      String payload = om.writeValueAsString(List.of(ticket, tickerReq));
-      ws.send(payload);
-      log.info("Subscribed markets: {}", codeList);
-    } catch (Exception e) {
-      log.error("Subscribe payload build error", e);
+  /** DB에서 업비트 심볼 목록 로드 */
+  private List<String> loadUpbitCodesFromDB() {
+    List<Market> markets = marketRepository.findAllByExchangeType(ExchangeType.UPBIT);
+    List<String> codes =
+        markets.stream()
+            .map(Market::getSymbol) // 예: "KRW-BTC"
+            .filter(s -> s != null && !s.isBlank())
+            .distinct()
+            .sorted()
+            .toList();
+    log.info("Loaded {} Upbit markets from DB", codes.size());
+    return codes;
+  }
+
+  /** 코드 목록을 배치로 구독 전송 */
+  private void subscribeCodes(WebSocket ws, List<String> codes) {
+    if (codes.isEmpty()) {
+      return;
+    }
+
+    for (int i = 0; i < codes.size(); i += SUBSCRIBE_BATCH_SIZE) {
+      List<String> batch = codes.subList(i, Math.min(i + SUBSCRIBE_BATCH_SIZE, codes.size()));
+      try {
+        var ticket = Map.of("ticket", "tomolow-" + System.currentTimeMillis());
+        var tickerReq = Map.of("type", "ticker", "codes", batch);
+        String payload = om.writeValueAsString(List.of(ticket, tickerReq));
+        ws.send(payload);
+        log.info("Subscribed batch ({} codes): {}", batch.size(), batch);
+      } catch (Exception e) {
+        log.error("Subscribe payload error", e);
+      }
     }
   }
 
   private void handleMessage(byte[] raw) {
     try {
-      // 바이너리 → Map
       Map<String, Object> m = om.readValue(raw, new TypeReference<>() {});
-      // 필요한 필드 추출 (Upbit ticker 필드명 기준)
-      String market = (String) m.get("code"); // ex) "KRW-BTC"
-      BigDecimal tradePrice = toBig(m.get("trade_price")); // 현재가
-      BigDecimal signedChangeRate = toBig(m.get("signed_change_rate")); // 등락률(부호 포함, 예: 0.0123)
-      BigDecimal accTradeVolume24h = toBig(m.get("acc_trade_volume_24h")); // 24h 거래량(수량)
+      String symbol = (String) m.get("code"); // ex) KRW-BTC
+      BigDecimal tradePrice = toBig(m.get("trade_price"));
+      BigDecimal signedChangeRate = toBig(m.get("signed_change_rate"));
+      BigDecimal changePrice = toBig(m.get("change_price")); // 전일대비 원
+      BigDecimal prevClose = toBig(m.get("prev_closing_price")); // 전일 종가
+      BigDecimal accVol24h = toBig(m.get("acc_trade_volume_24h"));
       long ts = ((Number) m.get("timestamp")).longValue();
+
+      String marketName =
+          nameCache.computeIfAbsent(
+              symbol, s -> marketRepository.findBySymbol(s).map(Market::getName).orElse(s));
 
       TickerMessage dto =
           TickerMessage.builder()
-              .market(market)
+              .market(symbol)
+              .marketName(marketName)
               .tradePrice(tradePrice)
               .changeRate(signedChangeRate)
-              .accVolume(accTradeVolume24h)
+              .changePrice(changePrice)
+              .prevClose(prevClose)
+              .accVolume(accVol24h)
               .tradeTimestamp(ts)
               .build();
 
-      // 1) Redis 캐시 업데이트 (선택: 문자열 전체/가격만)
-      redisUtil.setData("last_price:" + market, tradePrice.toPlainString());
-      redisUtil.setData("ticker:" + market, om.writeValueAsString(dto));
+      redisUtil.setData("last_price:" + symbol, tradePrice.toPlainString());
+      redisUtil.setData("ticker:" + symbol, om.writeValueAsString(dto));
 
-      // 2) STOMP 방송
-      messagingTemplate.convertAndSend("/topic/ticker/" + market, dto);
+      messagingTemplate.convertAndSend("/topic/ticker/" + symbol, dto);
 
     } catch (Exception e) {
       log.warn("Ticker parse/broadcast error: {}", e.getMessage());
@@ -168,5 +203,24 @@ public class UpbitTickerService {
       return BigDecimal.valueOf(n.doubleValue());
     }
     return new BigDecimal(String.valueOf(v));
+  }
+
+  /** 💡 마켓 테이블이 변경되었는지 5분마다 검사 → 목록이 달라지면 재구독 (필요 시 주기/조건은 자유롭게 조절) */
+  @Scheduled(fixedDelay = 5 * 60 * 1000L)
+  public void refreshSubscriptionIfNeeded() {
+    try {
+      List<String> current = loadUpbitCodesFromDB();
+      Set<String> now = new HashSet<>(current);
+      if (!now.equals(subscribedCodes)) {
+        log.info(
+            "Market set changed. Re-subscribing. old={}, new={}",
+            subscribedCodes.size(),
+            now.size());
+        // 가장 간단/안전하게 전체 재연결
+        reconnect();
+      }
+    } catch (Exception e) {
+      log.warn("refreshSubscriptionIfNeeded error: {}", e.getMessage());
+    }
   }
 }
