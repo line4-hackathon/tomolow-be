@@ -1,6 +1,7 @@
 package com.hackathon.tomolow.domain.transaction.service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,107 +34,137 @@ public class MatchService {
   private final TransactionRepository transactionRepository;
   private final UserMarketHoldingRepository userMarketHoldingRepository;
 
+  /** 실시간 가격 기반 지정가 체결 */
   @Transactional
-  public void match(String marketId) {
+  public void matchByMarketPrice(String marketId, BigDecimal marketPrice) {
 
-    while (true) {
-      // 1. 가장 높은 매수와 가장 낮은 매수 불러오기
-      String buyOrderId = orderRedisService.getHighestBuy(marketId);
-      String sellOrderId = orderRedisService.getLowestSell(marketId);
+    // 지정가 매수 : 시장가 <= 지정가 -> 체결
+    List<String> buyOrders = orderRedisService.findBuyOrderAtOrAbovePrice(marketId, marketPrice);
+    for (String buyOrderId : buyOrders) {
+      int remaining = orderRedisService.getRemainingQuantity(buyOrderId);
+      if (remaining <= 0) continue;
 
-      if (buyOrderId == null || sellOrderId == null) {
-        break;
-      }
-
-      BigDecimal buyPrice = orderRedisService.getPrice(buyOrderId);
-      BigDecimal sellPrice = orderRedisService.getPrice(sellOrderId);
-
-      // 2. 제일 높은 매수 가격 < 제일 낮은 매도 가격일 경우 체결 X
-      if (buyPrice.compareTo(sellPrice) < 0) {
-        break;
-      }
-
-      // 체결 ----------------
-      // 3. 체결 가격, 수량 확인
-      BigDecimal tradePrice = sellPrice;
-
-      int buyRemainingQuantity = orderRedisService.getRemainingQuantity(buyOrderId);
-      int sellRemainingQuantity = orderRedisService.getRemainingQuantity(sellOrderId);
-
-      int tradeQuantity = Math.min(buyRemainingQuantity, sellRemainingQuantity);
-
-      // 4. 잔여 수량 갱신
-      orderRedisService.updateRemaining(buyOrderId, buyRemainingQuantity - tradeQuantity);
-      orderRedisService.updateRemaining(sellOrderId, sellRemainingQuantity - tradeQuantity);
-
-      // 5. 체결 내역 DB에 저장
-      Market market =
-          marketRepository
-              .findById(Long.valueOf(marketId))
-              .orElseThrow(() -> new CustomException(MarketErrorCode.MARKET_NOT_FOUND));
-      String buyUserId = orderRedisService.getUserId(buyOrderId);
-      String sellUserId = orderRedisService.getUserId(sellOrderId);
-      User buyUser =
-          userRepository
-              .findById(Long.valueOf(buyUserId))
-              .orElseThrow(
-                  () -> new CustomException(UserErrorCode.USER_NOT_FOUND, "해당 id의 유저가 존재하지 않습니다."));
-      User sellUser =
-          userRepository
-              .findById(Long.valueOf(sellUserId))
-              .orElseThrow(
-                  () -> new CustomException(UserErrorCode.USER_NOT_FOUND, "해당 id의 유저가 존재하지 않습니다."));
-
-      Transaction transaction =
-          Transaction.builder()
-              .market(market)
-              .buyer(buyUser)
-              .seller(sellUser)
-              .quantity(tradeQuantity)
-              .price(tradePrice)
-              .build();
-      transactionRepository.save(transaction);
-
-      // 6. 사용자 주식 보유 수량 변화
-      UserMarketHolding buyUserMarketHolding =
-          userMarketHoldingRepository
-              .findByUserAndMarket(buyUser, market)
-              .orElseGet(
-                  () -> {
-                    UserMarketHolding newBuyUserMarketHolding =
-                        UserMarketHolding.builder()
-                            .market(market)
-                            .user(buyUser)
-                            .quantity(0L)
-                            .avgPrice(BigDecimal.ZERO)
-                            .build();
-                    return userMarketHoldingRepository.save(newBuyUserMarketHolding);
-                  });
-      UserMarketHolding sellUserMarketHolding =
-          userMarketHoldingRepository
-              .findByUserAndMarket(sellUser, market)
-              .orElseThrow(() -> new CustomException(UserMarketHoldingErrorCode.HOLDING_NOT_FOUND));
-      buyUserMarketHolding.addQuantity(tradeQuantity, tradePrice);
-      sellUserMarketHolding.subtractQuantity(tradeQuantity);
-
-      // 7. 사용자 자산 변화
-      BigDecimal totalPrice = tradePrice.multiply(BigDecimal.valueOf(tradeQuantity));
-      buyUser.subtractCashBalance(totalPrice);
-      sellUser.addCashBalance(totalPrice);
-      buyUser.addInvestmentBalance(totalPrice);
-      sellUser.addInvestmentBalance(totalPrice);
-
-      // 8. 수량 소진된 주문은 Redis에서 제거
-      if (buyRemainingQuantity - tradeQuantity == 0) {
-        orderRedisService.removeOrder(marketId, TradeType.BUY, buyOrderId);
-      }
-      if (sellRemainingQuantity - tradeQuantity == 0) {
-        orderRedisService.removeOrder(marketId, TradeType.SELL, sellOrderId);
-      }
-
-      // TODO: 9. 체결 정보를 웹소켓으로
-
-      log.info("거래 체결 - buyOrderId : " + buyOrderId + ", sellOrderId : " + sellOrderId);
+      BigDecimal limitPrice = orderRedisService.getPrice(buyOrderId);
+      if (marketPrice.compareTo(limitPrice) <= 0)
+        executeBuy(marketId, buyOrderId, limitPrice, remaining);
     }
+
+    // 지정가 매도 : 시장가 >= 지정가 -> 체결
+    List<String> sellOrders = orderRedisService.findSellOrderAtOrBelowPrice(marketId, marketPrice);
+    for (String sellOrderId : sellOrders) {
+      int remaining = orderRedisService.getRemainingQuantity(sellOrderId);
+      if (remaining <= 0) continue;
+
+      BigDecimal limitPrice = orderRedisService.getPrice(sellOrderId);
+      if (marketPrice.compareTo(limitPrice) >= 0)
+        executeSell(marketId, sellOrderId, limitPrice, remaining);
+    }
+  }
+
+  private void executeBuy(String marketId, String orderId, BigDecimal tradePrice, int quantity) {
+
+    Market market =
+        marketRepository
+            .findById(Long.valueOf(marketId))
+            .orElseThrow(() -> new CustomException(MarketErrorCode.MARKET_NOT_FOUND));
+
+    User user =
+        userRepository
+            .findById(Long.valueOf(orderRedisService.getUserId(orderId)))
+            .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+
+    BigDecimal totalCost = tradePrice.multiply(BigDecimal.valueOf(quantity));
+
+    // 1. 잔고 부족 시 주문 취소
+    if (user.getCashBalance().compareTo(totalCost) < 0) {
+      orderRedisService.removeOrder(marketId, TradeType.BUY, orderId);
+      return;
+    }
+
+    // 2. 사용자 자산 변화
+    user.subtractCashBalance(totalCost);
+    user.addInvestmentBalance(totalCost);
+
+    // 3. 사용자 주식 보유 수량 증가
+    UserMarketHolding userMarketHolding =
+        userMarketHoldingRepository
+            .findByUserAndMarket(user, market)
+            .orElseGet(
+                () -> {
+                  UserMarketHolding newBuyUserMarketHolding =
+                      UserMarketHolding.builder()
+                          .market(market)
+                          .user(user)
+                          .quantity(0L)
+                          .avgPrice(BigDecimal.ZERO)
+                          .build();
+                  return userMarketHoldingRepository.save(newBuyUserMarketHolding);
+                });
+    userMarketHolding.addQuantity(quantity, tradePrice);
+
+    // 4. 잔여 수량 갱신
+    orderRedisService.updateOrRemove(orderId, marketId, TradeType.BUY, quantity);
+
+    // 5. 체결 내역 DB에 저장
+    Transaction transaction =
+        Transaction.builder()
+            .market(market)
+            .user(user)
+            .price(tradePrice)
+            .quantity(quantity)
+            .tradeType(TradeType.BUY)
+            .build();
+    transactionRepository.save(transaction);
+
+    log.info("매수 체결 - orderId : " + orderId);
+  }
+
+  private void executeSell(String marketId, String orderId, BigDecimal tradePrice, int quantity) {
+    Market market =
+        marketRepository
+            .findById(Long.valueOf(marketId))
+            .orElseThrow(() -> new CustomException(MarketErrorCode.MARKET_NOT_FOUND));
+    User user =
+        userRepository
+            .findById(Long.valueOf(orderRedisService.getUserId(orderId)))
+            .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+    UserMarketHolding holding =
+        userMarketHoldingRepository
+            .findByUserAndMarket(user, market)
+            .orElseThrow(
+                () ->
+                    new CustomException(
+                        UserMarketHoldingErrorCode.HOLDING_NOT_FOUND,
+                        "사용자가 해당 market을 보유하고 있지 않습니다"));
+
+    // 1. 수량 부족 시 주문 취소
+    if (holding.getQuantity() < quantity) {
+      orderRedisService.removeOrder(marketId, TradeType.SELL, orderId);
+      return;
+    }
+
+    // 2. 보유 수량 감소
+    holding.subtractQuantity(quantity);
+
+    // 3. 사용자 자산 변화
+    BigDecimal totalPrice = tradePrice.multiply(BigDecimal.valueOf(quantity));
+    user.addCashBalance(totalPrice);
+    user.subtractInvestmentBalance(totalPrice);
+
+    // 4. 잔여 수량 갱신
+    orderRedisService.updateOrRemove(orderId, marketId, TradeType.SELL, quantity);
+
+    // 5. 체결 내역 DB에 저장
+    Transaction transaction =
+        Transaction.builder()
+            .market(market)
+            .user(user)
+            .price(tradePrice)
+            .quantity(quantity)
+            .tradeType(TradeType.SELL)
+            .build();
+    transactionRepository.save(transaction);
+
+    log.info("매도 체결 - orderId : " + orderId);
   }
 }
