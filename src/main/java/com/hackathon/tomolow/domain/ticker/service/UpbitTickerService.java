@@ -1,5 +1,14 @@
 package com.hackathon.tomolow.domain.ticker.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hackathon.tomolow.domain.market.entity.ExchangeType;
+import com.hackathon.tomolow.domain.market.entity.Market;
+import com.hackathon.tomolow.domain.market.repository.MarketRepository;
+import com.hackathon.tomolow.domain.ticker.dto.TickerMessage;
+import com.hackathon.tomolow.global.redis.RedisUtil;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
@@ -7,23 +16,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hackathon.tomolow.domain.market.entity.ExchangeType;
-import com.hackathon.tomolow.domain.market.entity.Market;
-import com.hackathon.tomolow.domain.market.repository.MarketRepository;
-import com.hackathon.tomolow.domain.portfilio.service.PortfolioIncrementService;
-import com.hackathon.tomolow.domain.ticker.dto.TickerMessage;
-import com.hackathon.tomolow.global.redis.RedisUtil;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
@@ -32,6 +24,9 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
@@ -44,7 +39,7 @@ public class UpbitTickerService {
   private final MarketRepository marketRepository;
 
   private final PriceTickDispatcher tickDispatcher; // 추가: 틱을 매칭기로 넘겨줄 컴포넌트
-  private final PortfolioIncrementService portfolioIncrementService; // 추가: 홈화면 포트폴리오 증분 누적
+  // private final PortfolioIncrementService portfolioIncrementService; // 추가: 홈화면 포트폴리오 증분 누적
 
   // 심볼→이름 캐시
   private final Map<String, String> nameCache = new ConcurrentHashMap<>();
@@ -128,7 +123,9 @@ public class UpbitTickerService {
     connect();
   }
 
-  /** DB에서 업비트 심볼 목록 로드 */
+  /**
+   * DB에서 업비트 심볼 목록 로드
+   */
   private List<String> loadUpbitCodesFromDB() {
     List<Market> markets = marketRepository.findAllByExchangeType(ExchangeType.UPBIT);
     List<String> codes =
@@ -142,7 +139,9 @@ public class UpbitTickerService {
     return codes;
   }
 
-  /** 코드 목록을 배치로 구독 전송 */
+  /**
+   * 코드 목록을 배치로 구독 전송
+   */
   private void subscribeCodes(WebSocket ws, List<String> codes) {
     if (codes.isEmpty()) {
       return;
@@ -164,7 +163,8 @@ public class UpbitTickerService {
 
   private void handleMessage(byte[] raw) {
     try {
-      Map<String, Object> m = om.readValue(raw, new TypeReference<>() {});
+      Map<String, Object> m = om.readValue(raw, new TypeReference<>() {
+      });
       String symbol = (String) m.get("code"); // ex) KRW-BTC
       BigDecimal tradePrice = toBig(m.get("trade_price"));
       BigDecimal signedChangeRate = toBig(m.get("signed_change_rate"));
@@ -197,8 +197,8 @@ public class UpbitTickerService {
       // ✅ 틱이 온 심볼만 매칭 트리거(논블로킹)
       tickDispatcher.onTick(symbol, tradePrice);
 
-      // ✅ (추가) 포트폴리오 증분 누적
-      portfolioIncrementService.onTick(symbol, tradePrice);
+      // ✅ (추가) 포트폴리오 증분 누적 -> 스케줄러 삭제하면서, 증분로직 삭제, 증분 메서드 삭제.
+      // portfolioIncrementService.onTick(symbol, tradePrice);
 
     } catch (Exception e) {
       log.warn("Ticker parse/broadcast error: {}", e.getMessage());
@@ -215,7 +215,9 @@ public class UpbitTickerService {
     return new BigDecimal(String.valueOf(v));
   }
 
-  /** 💡 마켓 테이블이 변경되었는지 5분마다 검사 → 목록이 달라지면 재구독 (필요 시 주기/조건은 자유롭게 조절) */
+  /**
+   * 💡 마켓 테이블이 변경되었는지 5분마다 검사 → 목록이 달라지면 재구독 (필요 시 주기/조건은 자유롭게 조절)
+   */
   @Scheduled(fixedDelay = 5 * 60 * 1000L)
   public void refreshSubscriptionIfNeeded() {
     try {
