@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <title>보유 종목 실시간 (서버 증분 계산 + 푸시)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <script src="/js/sockjs.min.js"></script>
+  <script src="/js/stomp.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #f7f7fb;
+      --card: #fff;
+      --ink: #111;
+      --muted: #666;
+      --line: #e7e7ef;
+      --up: #d93025;
+      --down: #0d904f;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html, body {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background: var(--bg);
+      font-family: ui-sans-serif, system-ui, -apple-system, Pretendard, Segoe UI, Roboto, Apple SD Gothic Neo, Malgun Gothic, sans-serif;
+      color: var(--ink);
+      display: flex;
+      justify-content: center;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 1080px
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 22px
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 12px 0;
+    }
+
+    input, button {
+      height: 36px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    input {
+      min-width: 220px
+    }
+
+    button {
+      cursor: pointer;
+      background: #111;
+      color: #fff;
+      border: none;
+    }
+
+    button.sec {
+      background: #eee;
+      color: #111
+    }
+
+    .status {
+      margin-left: 6px
+    }
+
+    .pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #333;
+    }
+
+    .summary {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 16px 18px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+      min-width: 0;
+    }
+
+    .name {
+      font-weight: 700;
+      margin-bottom: 6px;
+      font-size: 16px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .price {
+      font-size: 28px;
+      font-weight: 800;
+      margin: 2px 0 6px
+    }
+
+    .sub {
+      font-size: 13px;
+      color: var(--muted)
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 8px
+    }
+
+    .table th {
+      font-size: 12px;
+      color: #666;
+      text-align: left;
+      padding: 0 6px
+    }
+
+    .rowcard {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, .06);
+      overflow: hidden;
+    }
+
+    .rowgrid {
+      display: grid;
+      grid-template-columns: minmax(140px, 1fr) 100px 120px 140px 140px 120px;
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      min-width: 0;
+    }
+
+    @media (max-width: 860px) {
+      .rowgrid {
+        grid-template-columns: 1.2fr .7fr .9fr 1fr 1fr .8fr
+      }
+    }
+
+    @media (max-width: 640px) {
+      .rowgrid {
+        grid-template-columns: 1.4fr .8fr .9fr 1fr 1fr
+      }
+
+      .col-hide {
+        display: none
+      }
+    }
+
+    .code {
+      color: #888;
+      margin-left: 4px;
+      font-weight: 500
+    }
+
+    .right {
+      text-align: right
+    }
+
+    .mono {
+      font-variant-numeric: tabular-nums
+    }
+
+    .nowrap {
+      white-space: nowrap
+    }
+
+    .clip {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap
+    }
+
+    .up {
+      color: var(--up)
+    }
+
+    .down {
+      color: var(--down)
+    }
+
+    .grid-list {
+      display: grid;
+      gap: 12px
+    }
+
+    pre#log {
+      background: #0b1020;
+      color: #cde2ff;
+      padding: 12px;
+      border-radius: 12px;
+      height: 160px;
+      overflow: auto;
+      font-size: 12px;
+    }
+
+    .grow {
+      flex: 1
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #777;
+      margin-left: 6px
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>보유 종목 실시간 (서버 증분 계산 + 푸시)</h1>
+
+  <div class="row">
+    <input id="inpUserId" placeholder="userId (예: 5)"/>
+    <input id="inpToken" class="grow" placeholder="Bearer 토큰(JWT)"/>
+    <button id="btnLoad">보유현황 불러오기</button>
+  </div>
+
+  <div class="row">
+    <button id="btnConnectWs">Connect (Native WS)</button>
+    <button id="btnConnectSock">Connect (SockJS)</button>
+    <button id="btnDisconnect" class="sec">Disconnect</button>
+    <span id="status" class="status">🔴 미연결</span>
+    <span id="transport" class="pill">transport: -</span>
+    <span class="hint">연결 시 `/app/portfolio/online`으로 userId 등록</span>
+  </div>
+
+  <div class="summary" id="summary">
+    <div class="card">
+      <div class="name">현금자산</div>
+      <div class="price mono" id="cashBalance">-</div>
+      <div class="sub">서버 기준 고정값</div>
+    </div>
+    <div class="card">
+      <div class="name">투자자산(매입원금)</div>
+      <div class="price mono" id="investBalance">-</div>
+      <div class="sub">보유 종목 매입가 합계(고정)</div>
+    </div>
+    <div class="card">
+      <div class="name">총 손익(원)</div>
+      <div class="price mono" id="totalPnlAmount">-</div>
+      <div class="sub">= Σ(현재가×수량 - 평균매입×수량), 서버 증분 계산</div>
+    </div>
+    <div class="card">
+      <div class="name">총 손익률</div>
+      <div class="price mono" id="totalPnlRate">-</div>
+      <div class="sub">= 총손익 ÷ 투자자산 (가중), 서버 푸시</div>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;">
+    <table class="table" style="width:100%;">
+      <thead>
+      <tr>
+        <th>종목</th>
+        <th class="right">수량</th>
+        <th class="right">평단</th>
+        <th class="right">현재가(실시간)</th>
+        <th class="right">손익(원)</th>
+        <th class="right col-hide">손익률</th>
+      </tr>
+      </thead>
+    </table>
+    <div id="list" class="grid-list" style="margin-top:6px;"></div>
+  </div>
+
+  <h3>로그</h3>
+  <pre id="log"></pre>
+</div>
+
+<script>
+  const WS_NATIVE_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host
+      + '/ws';
+  const SOCKJS_FULL_URL = location.origin + '/ws-sockjs';
+  let client = null, holdings = null;
+  const subs = {};
+  const el = (id) => document.getElementById(id);
+  const log = (m) => {
+    const p = el('log');
+    p.textContent += m + "\n";
+    p.scrollTop = p.scrollHeight;
+  }
+  const fmt = (n) => Number(n ?? 0).toLocaleString('ko-KR');
+  const pct = (n) => (Number(n) >= 0 ? '+' : '') + (Number(n) * 100).toFixed(2) + '%';
+  const STOMP = window.StompJs || window.Stomp;
+  const SockJSGlobal = window.SockJS || window.sockjs;
+
+  function getUserId() {
+    const v = el('inpUserId').value.trim();
+    return v ? Number(v) : NaN;
+  }
+
+  // ✅ STOMP 방식 온라인 등록
+  function registerOnline() {
+    const uid = getUserId();
+    if (!client?.active || !isFinite(uid)) {
+      log('❌ 온라인 등록 실패: 연결/유저ID 확인');
+      return;
+    }
+    client.publish({destination: '/app/portfolio/online', body: String(uid)});
+    log('📡 STOMP /app/portfolio/online => ' + uid);
+    window.addEventListener('beforeunload', registerOffline);
+  }
+
+  function registerOffline() {
+    try {
+      const uid = getUserId();
+      if (!client?.active || !isFinite(uid)) {
+        return;
+      }
+      client.publish({destination: '/app/portfolio/offline', body: String(uid)});
+      log('📡 STOMP /app/portfolio/offline => ' + uid);
+    } catch (_) {
+    }
+  }
+
+  function createClientNative() {
+    return new STOMP.Client({
+      brokerURL: WS_NATIVE_URL,
+      reconnectDelay: 2000,
+      debug: (m) => log(m),
+      onConnect: () => {
+        log('✅ CONNECTED (native)');
+        registerOnline();
+        subscribePortfolio();
+        subscribeTickers();
+      },
+      onDisconnect: () => log('🔻 DISCONNECTED'),
+      onStompError: (f) => log('❌ STOMP ERROR: ' + (f.headers?.message || ''))
+    });
+  }
+
+  function createClientSock() {
+    return new STOMP.Client({
+      webSocketFactory: () => new SockJSGlobal(SOCKJS_FULL_URL),
+      reconnectDelay: 2000,
+      debug: (m) => log(m),
+      onConnect: () => {
+        log('✅ CONNECTED (SockJS)');
+        registerOnline();
+        subscribePortfolio();
+        subscribeTickers();
+      },
+      onDisconnect: () => log('🔻 DISCONNECTED')
+    });
+  }
+
+  async function loadHoldings() {
+    const token = el('inpToken').value.trim();
+    if (!token) {
+      alert('Bearer 토큰을 입력해주세요.');
+      return;
+    }
+    log('📥 GET /api/mypage/holdings/my');
+    const r = await fetch('/api/mypage/holdings/my',
+        {headers: {'Authorization': 'Bearer ' + token}});
+    if (!r.ok) {
+      alert('보유현황 요청 실패: ' + r.status);
+      return;
+    }
+    const j = await r.json();
+    holdings = j.data;
+    renderHoldings(holdings);
+    if (client?.active) {
+      unsubscribeAll();
+      subscribePortfolio();
+      subscribeTickers();
+      registerOnline();
+    }
+  }
+
+  function renderHoldings(data) {
+    el('cashBalance').textContent = fmt(data.portfolio.cashBalance);
+    el('investBalance').textContent = fmt(data.portfolio.totalInvestment);
+    el('totalPnlAmount').textContent = fmt(data.portfolio.totalPnlAmount);
+    el('totalPnlRate').textContent = pct(data.portfolio.totalPnlRate);
+    const box = el('list');
+    box.innerHTML = '';
+    (data.items || []).forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'rowcard';
+      row.id = 'row-' + item.symbol;
+      row.innerHTML = `
+        <div class="rowgrid">
+          <div class="clip"><div class="name clip">${item.name}<span class="code">(${item.symbol})</span></div></div>
+          <div class="right mono nowrap" id="q-${item.symbol}">${fmt(item.quantity)}</div>
+          <div class="right mono nowrap" id="avg-${item.symbol}">${fmt(item.avgPrice)}</div>
+          <div class="right mono price nowrap" id="cur-${item.symbol}">${fmt(item.currentPrice)}</div>
+          <div class="right mono nowrap" id="pnl-${item.symbol}">${fmt(item.pnlAmount)}</div>
+          <div class="right mono nowrap col-hide" id="rate-${item.symbol}">${pct(item.pnlRate)}</div>
+        </div>`;
+      box.appendChild(row);
+      updateRowColor(item.symbol, item.pnlAmount);
+    });
+  }
+
+  function updateRowColor(symbol, pnlAmount) {
+    const els = ['cur-', 'pnl-', 'rate-'].map(p => el(p + symbol));
+    const up = Number(pnlAmount) >= 0;
+    els.forEach(e => {
+      if (e) {
+        e.classList.remove('up', 'down');
+        e.classList.add(up ? 'up' : 'down');
+      }
+    });
+  }
+
+  function subscribeTickers() {
+    if (!client?.active || !holdings?.items) {
+      return;
+    }
+    holdings.items.forEach(it => {
+      const topic = '/topic/ticker/' + it.symbol;
+      if (subs[it.symbol]) {
+        return;
+      }
+      subs[it.symbol] = client.subscribe(topic, (msg) => {
+        const t = JSON.parse(msg.body);
+        const cur = Number(t.tradePrice);
+        el('cur-' + it.symbol).textContent = fmt(cur);
+        const qty = Number(it.quantity), avg = Number(it.avgPrice);
+        const pnlAmt = cur * qty - avg * qty, pnlRate = avg === 0 ? 0 : (pnlAmt / (avg * qty));
+        el('pnl-' + it.symbol).textContent = fmt(pnlAmt);
+        const rateEl = el('rate-' + it.symbol);
+        if (rateEl) {
+          rateEl.textContent = pct(pnlRate);
+        }
+        updateRowColor(it.symbol, pnlAmt);
+      });
+      log('🧷 SUB ' + topic);
+    });
+  }
+
+  function subscribePortfolio() {
+    const uid = getUserId();
+    if (!client?.active || !isFinite(uid)) {
+      return;
+    }
+    const topic = '/topic/portfolio/' + uid;
+    if (subs['portfolio']) {
+      subs['portfolio'].unsubscribe();
+    }
+    subs['portfolio'] = client.subscribe(topic, (msg) => {
+      const p = JSON.parse(msg.body);
+      el('totalPnlAmount').textContent = fmt(p.totalPnlAmount);
+      el('totalPnlRate').textContent = pct(p.totalPnlRate);
+    });
+    log('🧷 SUB ' + topic);
+  }
+
+  function unsubscribeAll() {
+    Object.values(subs).forEach(s => {
+      try {
+        s.unsubscribe();
+      } catch (_) {
+      }
+    });
+    for (const k in subs) {
+      delete subs[k];
+    }
+  }
+
+  el('btnLoad').onclick = loadHoldings;
+  el('btnConnectWs').onclick = () => {
+    if (client?.active) {
+      client.deactivate();
+    }
+    client = createClientNative();
+    client.activate();
+  };
+  el('btnConnectSock').onclick = () => {
+    if (client?.active) {
+      client.deactivate();
+    }
+    client = createClientSock();
+    client.activate();
+  };
+  el('btnDisconnect').onclick = () => {
+    registerOffline();
+    if (client?.active) {
+      client.deactivate();
+    }
+    unsubscribeAll();
+  };
+</script>
+</body>
+</html>
