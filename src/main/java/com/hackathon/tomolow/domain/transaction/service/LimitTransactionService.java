@@ -9,6 +9,7 @@ import com.hackathon.tomolow.domain.market.entity.Market;
 import com.hackathon.tomolow.domain.market.exception.MarketErrorCode;
 import com.hackathon.tomolow.domain.market.repository.MarketRepository;
 import com.hackathon.tomolow.domain.market.service.MarketService;
+import com.hackathon.tomolow.domain.ticker.service.PriceQueryService;
 import com.hackathon.tomolow.domain.transaction.dto.OrderRequestDto;
 import com.hackathon.tomolow.domain.transaction.entity.TradeType;
 import com.hackathon.tomolow.domain.transaction.exception.TransactionErrorCode;
@@ -34,24 +35,24 @@ public class LimitTransactionService {
   private final MatchService matchService;
   private final UserMarketHoldingRepository userMarketHoldingRepository;
   private final MarketService marketService;
+  private final PriceQueryService priceQueryService;
 
   /** 지정가 매수 */
-  public String limitBuy(Long marketId, OrderRequestDto orderRequestDto) {
-    // TODO : 현재 시장가 불러오기
-    // BigDecimal marketPrice = 현재 시장가 불러오는 메서드.
-    BigDecimal marketPrice = new BigDecimal(10000); // 이 코드 삭제
-
+  public String limitBuy(Long userId, Long marketId, OrderRequestDto orderRequestDto) {
     Market market =
         marketRepository
             .findById(marketId)
             .orElseThrow(() -> new CustomException(MarketErrorCode.MARKET_NOT_FOUND));
 
-    Long currentUserId = securityUtil.getCurrentUserId();
     User user =
         userRepository
-            .findById(currentUserId)
+            .findById(userId)
             .orElseThrow(
                 () -> new CustomException(UserErrorCode.USER_NOT_FOUND, "해당 id의 유저가 존재하지 않습니다."));
+
+    // TODO : 현재 시장가 불러오기
+    // ✅ 현재 시장가 (실시간)
+    BigDecimal marketPrice = priceQueryService.getLastTradePriceOrThrow(market.getSymbol());
 
     // 매수 가능 잔고인지 확인
     BigDecimal totalCost =
@@ -61,7 +62,7 @@ public class LimitTransactionService {
     }
 
     // 주문 ID 생성
-    String orderId = currentUserId + UUID.randomUUID().toString();
+    String orderId = userId + UUID.randomUUID().toString();
 
     // Redis 내 대기 주문 저장
     orderRedisService.saveOrder(
@@ -70,7 +71,7 @@ public class LimitTransactionService {
         TradeType.BUY,
         orderRequestDto.getPrice(),
         orderRequestDto.getQuantity(),
-        currentUserId.toString());
+        userId.toString());
 
     // 매칭 시도
     matchService.matchByMarketPrice(String.valueOf(marketId), marketPrice);
@@ -79,22 +80,21 @@ public class LimitTransactionService {
   }
 
   /** 지정가 매도 */
-  public String limitSell(Long marketId, OrderRequestDto orderRequestDto) {
-    // TODO : 현재 시장가 불러오기
-    // BigDecimal marketPrice = 현재 시장가 불러오는 메서드
-    BigDecimal marketPrice = new BigDecimal(10000); // 이 코드 삭제
-
+  public String limitSell(Long userId, Long marketId, OrderRequestDto orderRequestDto) {
     Market market =
         marketRepository
             .findById(marketId)
             .orElseThrow(() -> new CustomException(MarketErrorCode.MARKET_NOT_FOUND));
 
-    Long currentUserId = securityUtil.getCurrentUserId();
     User user =
         userRepository
-            .findById(currentUserId)
+            .findById(userId)
             .orElseThrow(
                 () -> new CustomException(UserErrorCode.USER_NOT_FOUND, "해당 id의 유저가 존재하지 않습니다."));
+
+    // TODO : 현재 시장가 불러오기
+    // ✅ 현재 시장가 (실시간)
+    BigDecimal marketPrice = priceQueryService.getLastTradePriceOrThrow(market.getSymbol());
 
     // 매도 가능한 수량을 가지고 있는지 확인
     UserMarketHolding userMarketHolding =
@@ -109,7 +109,7 @@ public class LimitTransactionService {
     }
 
     // 주문 ID 생성
-    String orderId = currentUserId + UUID.randomUUID().toString();
+    String orderId = userId + UUID.randomUUID().toString();
 
     // Redis 내 대기 주문 저장
     orderRedisService.saveOrder(
@@ -118,7 +118,7 @@ public class LimitTransactionService {
         TradeType.SELL,
         orderRequestDto.getPrice(),
         orderRequestDto.getQuantity(),
-        currentUserId.toString());
+        userId.toString());
 
     // 매칭 시도
     matchService.matchByMarketPrice(String.valueOf(marketId), marketPrice);
