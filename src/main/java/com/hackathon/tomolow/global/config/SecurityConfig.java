@@ -62,7 +62,8 @@ public class SecurityConfig {
                     .requestMatchers(PathRequest.toStaticResources().atCommonLocations())
                     .permitAll()
                     // 우리가 쓰는 파일/경로 추가 허용
-                    .requestMatchers("/", "/index.html", "/test.html", "/favicon.ico")
+                    .requestMatchers(
+                        "/", "/index.html", "/test.html", "/holding-test.html", "/favicon.ico")
                     .permitAll()
                     .requestMatchers("/js/**", "/css/**", "/images/**", "/webjars/**")
                     .permitAll()
