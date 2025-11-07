@@ -42,6 +42,8 @@ public class UpbitTickerService {
   private final RedisUtil redisUtil;
   private final MarketRepository marketRepository;
 
+  private final PriceTickDispatcher tickDispatcher; // 추가: 틱을 매칭기로 넘겨줄 컴포넌트
+
   // 심볼→이름 캐시
   private final Map<String, String> nameCache = new ConcurrentHashMap<>();
 
@@ -189,6 +191,9 @@ public class UpbitTickerService {
       redisUtil.setData("ticker:" + symbol, om.writeValueAsString(dto));
 
       messagingTemplate.convertAndSend("/topic/ticker/" + symbol, dto);
+
+      // ✅ 틱이 온 심볼만 매칭 트리거(논블로킹)
+      tickDispatcher.onTick(symbol, tradePrice);
 
     } catch (Exception e) {
       log.warn("Ticker parse/broadcast error: {}", e.getMessage());

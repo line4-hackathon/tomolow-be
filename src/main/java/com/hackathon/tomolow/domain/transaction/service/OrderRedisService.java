@@ -1,6 +1,8 @@
 package com.hackathon.tomolow.domain.transaction.service;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -87,8 +89,16 @@ public class OrderRedisService {
   }
 
   /** 잔량 업데이트 */
-  public void updateRemaining(String orderId, int remaining) {
-    redisTemplate.opsForHash().put(detailKey(orderId), "remaining", String.valueOf(remaining));
+  public void updateOrRemove(String orderId, String marketId, TradeType tradeType, int quantity) {
+    String detail = detailKey(orderId);
+
+    int remaining = getRemainingQuantity(orderId) - quantity;
+
+    if (remaining <= 0) {
+      removeOrder(marketId, tradeType, orderId);
+    } else {
+      redisTemplate.opsForHash().put(detail, "remaining", String.valueOf(remaining));
+    }
   }
 
   /** 주문 제거 */
@@ -104,5 +114,35 @@ public class OrderRedisService {
     if (keys != null && !keys.isEmpty()) {
       redisTemplate.delete(keys);
     }
+  }
+
+  /** 특정 가격 이상의 매수 주문 조회 */
+  public List<String> findBuyOrderAtOrAbovePrice(String marketId, BigDecimal marketPrice) {
+    var result =
+        redisTemplate
+            .opsForZSet()
+            .reverseRangeByScore(
+                buyKey(marketId), marketPrice.doubleValue(), Double.POSITIVE_INFINITY);
+    return (result != null) ? result.stream().toList() : List.of();
+  }
+
+  /** 특정 가격 이하의 매도 주문 조회 */
+  public List<String> findSellOrderAtOrBelowPrice(String marketId, BigDecimal marketPrice) {
+    var result =
+        redisTemplate
+            .opsForZSet()
+            .rangeByScore(sellKey(marketId), Double.NEGATIVE_INFINITY, marketPrice.doubleValue());
+    return (result != null) ? result.stream().toList() : List.of();
+  }
+
+  // 주문이 남아있는 marketId들을 보관하는 세트의 키 이름
+  private String pendingSetKey() {
+    return "order:pending:markets";
+  }
+
+  // 세트에서 모든 marketId를 가져온다
+  public Set<String> getPendingMarketIds() {
+    Set<String> s = redisTemplate.opsForSet().members(pendingSetKey());
+    return (s == null) ? Set.of() : s;
   }
 }
