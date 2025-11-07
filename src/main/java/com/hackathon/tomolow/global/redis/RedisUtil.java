@@ -72,5 +72,9 @@ public class RedisUtil {
 
   public List<String> getList(String key) {
     return template.opsForList().range(key, 0, -1);
+
+  // 추가
+  public org.springframework.data.redis.core.StringRedisTemplate getTemplate() {
+    return this.template;
   }
 }

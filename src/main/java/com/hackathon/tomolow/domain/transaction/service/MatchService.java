@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hackathon.tomolow.domain.market.entity.Market;
 import com.hackathon.tomolow.domain.market.exception.MarketErrorCode;
 import com.hackathon.tomolow.domain.market.repository.MarketRepository;
+import com.hackathon.tomolow.domain.portfilio.service.PortfolioPnlService;
+import com.hackathon.tomolow.domain.portfilio.service.PortfolioRedisService;
 import com.hackathon.tomolow.domain.transaction.entity.TradeType;
 import com.hackathon.tomolow.domain.transaction.entity.Transaction;
 import com.hackathon.tomolow.domain.transaction.repository.TransactionRepository;
@@ -33,6 +35,8 @@ public class MatchService {
   private final UserRepository userRepository;
   private final TransactionRepository transactionRepository;
   private final UserMarketHoldingRepository userMarketHoldingRepository;
+  private final PortfolioRedisService portfolioRedisService;
+  private final PortfolioPnlService portfolioPnlService;
 
   /** 실시간 가격 기반 지정가 체결 */
   @Transactional
@@ -42,22 +46,28 @@ public class MatchService {
     List<String> buyOrders = orderRedisService.findBuyOrderAtOrAbovePrice(marketId, marketPrice);
     for (String buyOrderId : buyOrders) {
       int remaining = orderRedisService.getRemainingQuantity(buyOrderId);
-      if (remaining <= 0) continue;
+      if (remaining <= 0) {
+        continue;
+      }
 
       BigDecimal limitPrice = orderRedisService.getPrice(buyOrderId);
-      if (marketPrice.compareTo(limitPrice) <= 0)
+      if (marketPrice.compareTo(limitPrice) <= 0) {
         executeBuy(marketId, buyOrderId, limitPrice, remaining);
+      }
     }
 
     // 지정가 매도 : 시장가 >= 지정가 -> 체결
     List<String> sellOrders = orderRedisService.findSellOrderAtOrBelowPrice(marketId, marketPrice);
     for (String sellOrderId : sellOrders) {
       int remaining = orderRedisService.getRemainingQuantity(sellOrderId);
-      if (remaining <= 0) continue;
+      if (remaining <= 0) {
+        continue;
+      }
 
       BigDecimal limitPrice = orderRedisService.getPrice(sellOrderId);
-      if (marketPrice.compareTo(limitPrice) >= 0)
+      if (marketPrice.compareTo(limitPrice) >= 0) {
         executeSell(marketId, sellOrderId, limitPrice, remaining);
+      }
     }
   }
 
@@ -102,6 +112,15 @@ public class MatchService {
                 });
     userMarketHolding.addQuantity(quantity, tradePrice);
 
+    // ===== 보유 미러/세트 업데이트 =====
+    String symbol = market.getSymbol();
+    long newQty = userMarketHolding.getQuantity(); // JPA 엔티티에 누적 반영된 값
+    portfolioRedisService.setPosition(
+        user.getId(), symbol, newQty, userMarketHolding.getAvgPrice());
+    if (newQty > 0) {
+      portfolioRedisService.addHolder(symbol, user.getId());
+    }
+
     // 4. 잔여 수량 갱신
     orderRedisService.updateOrRemove(orderId, marketId, TradeType.BUY, quantity);
 
@@ -115,6 +134,10 @@ public class MatchService {
             .tradeType(TradeType.BUY)
             .build();
     transactionRepository.save(transaction);
+
+    // ✅ 보유 변경 인덱스 갱신 + 온라인 유저면 즉시 푸시
+    portfolioPnlService.reindexUserHoldings(user.getId());
+    portfolioPnlService.pushPnlAndSeedBaseline(user.getId());
 
     log.info("매수 체결 - orderId : " + orderId);
   }
@@ -147,9 +170,23 @@ public class MatchService {
     holding.subtractQuantity(quantity);
 
     // 3. 사용자 자산 변화
-    BigDecimal totalPrice = tradePrice.multiply(BigDecimal.valueOf(quantity));
+    BigDecimal totalPrice = tradePrice.multiply(BigDecimal.valueOf(quantity)); // 매도금액
     user.addCashBalance(totalPrice);
-    user.subtractInvestmentBalance(totalPrice);
+    // user.subtractInvestmentBalance(totalPrice);
+    // ✅ 투자자산(매입원금)은 '원가'로 감소해야 함
+    BigDecimal costBasis = holding.getAvgPrice().multiply(BigDecimal.valueOf(quantity));
+    user.subtractInvestmentBalance(costBasis);
+
+    // ===== 보유 미러/세트 업데이트 =====
+    String symbol = market.getSymbol();
+    long newQty = holding.getQuantity();
+    if (newQty > 0) {
+      portfolioRedisService.setPosition(user.getId(), symbol, newQty, holding.getAvgPrice());
+      portfolioRedisService.addHolder(symbol, user.getId());
+    } else {
+      portfolioRedisService.deletePosition(user.getId(), symbol);
+      portfolioRedisService.removeHolder(symbol, user.getId());
+    }
 
     // 4. 잔여 수량 갱신
     orderRedisService.updateOrRemove(orderId, marketId, TradeType.SELL, quantity);
@@ -164,6 +201,10 @@ public class MatchService {
             .tradeType(TradeType.SELL)
             .build();
     transactionRepository.save(transaction);
+
+    // ✅ 보유 변경 인덱스 갱신 + 온라인 유저면 즉시 푸시
+    portfolioPnlService.reindexUserHoldings(user.getId());
+    portfolioPnlService.pushPnlAndSeedBaseline(user.getId());
 
     log.info("매도 체결 - orderId : " + orderId);
   }

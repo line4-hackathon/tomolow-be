@@ -1,5 +1,6 @@
 package com.hackathon.tomolow.domain.userMarketHolding.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,4 +12,7 @@ import com.hackathon.tomolow.domain.userMarketHolding.entity.UserMarketHolding;
 public interface UserMarketHoldingRepository extends JpaRepository<UserMarketHolding, Long> {
 
   Optional<UserMarketHolding> findByUserAndMarket(User user, Market market);
+
+  // ✅ 내 보유 종목 전체 조회용
+  List<UserMarketHolding> findAllByUser(User user);
 }

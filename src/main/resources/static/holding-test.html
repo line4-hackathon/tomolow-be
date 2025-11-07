@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <title>보유 종목 실시간 테스트</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <script src="/js/sockjs.min.js"></script>
+  <script src="/js/stomp.umd.min.js"></script>
+  <style>
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, Pretendard, sans-serif;
+      background: #fafafa;
+      margin: 0;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 980px
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 22px
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 12px 0
+    }
+
+    input, button {
+      height: 36px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid #ddd
+    }
+
+    button {
+      cursor: pointer;
+      background: #111;
+      color: #fff;
+      border: none
+    }
+
+    button.sec {
+      background: #eee;
+      color: #111
+    }
+
+    .status {
+      margin-left: 8px
+    }
+
+    .pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid #ddd;
+      background: #fff;
+      color: #333
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px 18px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .08)
+    }
+
+    .name {
+      font-weight: 700;
+      margin-bottom: 6px;
+      font-size: 18px
+    }
+
+    .code {
+      color: #888;
+      margin-left: 4px
+    }
+
+    .price {
+      font-size: 28px;
+      font-weight: 800;
+      margin: 2px 0 6px
+    }
+
+    .sub {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 4px
+    }
+
+    .up {
+      color: #d93025
+    }
+
+    .down {
+      color: #0d904f
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 8px
+    }
+
+    .table th {
+      font-size: 12px;
+      color: #666;
+      text-align: left;
+      padding: 0 6px
+    }
+
+    .rowcard {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, .06)
+    }
+
+    .rowgrid {
+      display: grid;
+      grid-template-columns:140px 100px 100px 110px 110px 110px;
+      gap: 10px;
+      align-items: center;
+      padding: 12px
+    }
+
+    .right {
+      text-align: right
+    }
+
+    .mono {
+      font-variant-numeric: tabular-nums
+    }
+
+    .summary {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 14px
+    }
+
+    .summary .card {
+      flex: 1;
+      min-width: 220px
+    }
+
+    pre#log {
+      background: #0b1020;
+      color: #cde2ff;
+      padding: 12px;
+      border-radius: 12px;
+      height: 160px;
+      overflow: auto
+    }
+
+    /* ==== FIX: 보유 종목 줄 잘림 방지 ==== */
+
+    /* 리스트는 필요한 경우 가로 스크롤 허용 */
+    #list {
+      display: block;
+      overflow-x: auto; /* 화면 좁을 때도 잘리지 않고 스크롤 가능 */
+      padding-bottom: 4px;
+    }
+
+    /* 카드 내부 그리드를 고정 px → 유동 fr 로 변경해 반응형 정렬 */
+    .rowgrid {
+      /* 종목 | 수량 | 평단 | 현재가 | 손익(원) | 손익률 */
+      grid-template-columns: 1.4fr 0.6fr 0.8fr 1fr 1fr 0.8fr;
+      column-gap: 14px;
+      min-width: 720px; /* 아주 좁은 화면에서는 스크롤로 보이도록 안전 폭 */
+    }
+
+    /* 숫자 폰트가 너무 커서 줄바꿈/잘림 나는 것 완화 */
+    .price {
+      font-size: 24px; /* 기존 28px → 24px */
+    }
+
+    /* 타이틀/값이 겹치지 않도록 작은 화면 보정 */
+    @media (max-width: 900px) {
+      .rowgrid {
+        min-width: 680px;
+      }
+
+      .price {
+        font-size: 22px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .rowgrid {
+        min-width: 640px;
+      }
+
+      .price {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>보유 종목 실시간 테스트</h1>
+  <div class="row">
+    <button id="btnLoad">보유현황 불러오기</button>
+    <button id="btnConnectWs">Connect (Native WS)</button>
+    <button id="btnConnectSock">Connect (SockJS)</button>
+    <button id="btnDisconnect" class="sec">Disconnect</button>
+    <span id="status" class="status">🔴 미연결</span>
+    <span id="transport" class="pill">transport: -</span>
+  </div>
+
+  <div class="summary" id="summary">
+    <div class="card">
+      <div class="name">현금자산</div>
+      <div class="price mono" id="cashBalance">-</div>
+      <div class="sub">서버 기준 고정값</div>
+    </div>
+    <div class="card">
+      <div class="name">투자자산(매입원금)</div>
+      <div class="price mono" id="investBalance">-</div>
+      <div class="sub">보유 종목 매입가 합계(고정)</div>
+    </div>
+    <div class="card">
+      <div class="name">총 손익(원)</div>
+      <div class="price mono" id="totalPnlAmount">-</div>
+      <div class="sub">= Σ(현재가×수량 - 평균매입×수량)</div>
+    </div>
+    <div class="card">
+      <div class="name">총 손익률</div>
+      <div class="price mono" id="totalPnlRate">-</div>
+      <div class="sub">= 총손익 ÷ 투자자산 (가중)</div>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;">
+    <table class="table" style="width:100%;">
+      <thead>
+      <tr>
+        <th>종목</th>
+        <th class="right">수량</th>
+        <th class="right">평단</th>
+        <th class="right">현재가(실시간)</th>
+        <th class="right">손익(원)</th>
+        <th class="right">손익률</th>
+      </tr>
+      </thead>
+    </table>
+    <div id="list" class="grid" style="margin-top:6px;"></div>
+  </div>
+
+  <h3>로그</h3>
+  <pre id="log"></pre>
+</div>
+
+<script>
+  // ====== 환경 URL ======
+  const WS_NATIVE_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host
+      + '/ws';
+  const SOCKJS_FULL_URL = location.origin + '/ws-sockjs';
+
+  // ====== 전역 상태 ======
+  let client = null;
+  let currentTransport = '-';
+  let holdings = null; // 서버에서 가져온 초기 보유데이터
+  const subs = {};     // 심볼별 구독 핸들
+
+  // ====== DOM ======
+  const el = (id) => document.getElementById(id);
+  const log = (m) => {
+    const p = el('log');
+    p.textContent += m + "\n";
+    p.scrollTop = p.scrollHeight;
+  }
+  const setStatus = (ok) => el('status').textContent = ok ? '🟢 연결됨' : '🔴 미연결';
+  const setTransport = (t) => {
+    currentTransport = t;
+    el('transport').textContent = 'transport: ' + t;
+  }
+  const fmt = (n) => Number(n ?? 0).toLocaleString('ko-KR');
+  const pct = (n) => (Number(n) >= 0 ? '+' : '') + (Number(n) * 100).toFixed(2) + '%';
+
+  // 가드: 0으로 나눔 방지
+  const safeDiv = (num, den) => {
+    const d = Number(den);
+    if (!isFinite(d) || Math.abs(d) < 1e-9) {
+      return 0;
+    }
+    return Number(num) / d;
+  };
+
+  // ====== STOMP 팩토리 ======
+  const STOMP = window.StompJs || window.Stomp;
+  const SockJSGlobal = window.SockJS || window.sockjs;
+
+  function createClientNative() {
+    return new STOMP.Client({
+      brokerURL: WS_NATIVE_URL,
+      reconnectDelay: 2000,
+      debug: (m) => log(m),
+      onConnect: () => {
+        setStatus(true);
+        setTransport('native');
+        log('✅ CONNECTED(native)');
+        subscribeAll();
+      },
+      onDisconnect: () => {
+        setStatus(false);
+        log('🔻 DISCONNECTED');
+      },
+      onStompError: (f) => {
+        log('❌ STOMP ERROR: ' + (f.headers?.message || ''));
+        log(f.body || '');
+      },
+      onWebSocketError: (e) => log('❌ WS ERROR: ' + (e?.message || e)),
+    });
+  }
+
+  function createClientSock() {
+    if (!SockJSGlobal) {
+      log('❌ SockJS 누락');
+      return null;
+    }
+    return new STOMP.Client({
+      webSocketFactory: () => new SockJSGlobal(SOCKJS_FULL_URL),
+      reconnectDelay: 2000,
+      debug: (m) => log(m),
+      onConnect: () => {
+        setStatus(true);
+        setTransport('sockjs');
+        log('✅ CONNECTED(sockjs)');
+        subscribeAll();
+      },
+      onDisconnect: () => {
+        setStatus(false);
+        log('🔻 DISCONNECTED');
+      },
+      onStompError: (f) => {
+        log('❌ STOMP ERROR: ' + (f.headers?.message || ''));
+        log(f.body || '');
+      },
+      onWebSocketError: (e) => log('❌ WS ERROR: ' + (e?.message || e)),
+    });
+  }
+
+  // ====== 보유현황 최초 로드 ======
+  async function loadHoldings() {
+    log('📥 fetching /api/mypage/holdings/my ...');
+    const token = "hereisuseraccesstoken"; // 🔐 DevTools -> Application -> Local Storage -> token 등에서 복사
+    const r = await fetch('/api/mypage/holdings/my', {
+      headers: {
+        'Authorization': 'Bearer ' + token
+      }
+    });
+    const j = await r.json();
+    holdings = j.data; // {items, portfolio}
+    renderHoldings(holdings);
+    // 연결되어 있다면 구독 새로 구성
+    if (client?.active) {
+      unsubscribeAll();
+      subscribeAll();
+    }
+  }
+
+  // ====== 렌더 ======
+  function renderHoldings(data) {
+    // 상단 요약(현금/투자/총손익/총손익률) — 서버값 반영
+    el('cashBalance').textContent = fmt(data.portfolio.cashBalance);
+    el('investBalance').textContent = fmt(data.portfolio.totalInvestment);
+    el('totalPnlAmount').textContent = fmt(data.portfolio.totalPnlAmount);
+    el('totalPnlRate').textContent = pct(data.portfolio.totalPnlRate);
+
+    // 리스트
+    const box = el('list');
+    box.innerHTML = '';
+    (data.items || []).forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'rowcard';
+      row.id = 'row-' + item.symbol;
+
+      row.innerHTML = `
+        <div class="rowgrid">
+          <div>
+            <div class="name">${item.name}<span class="code">(${item.symbol})</span></div>
+          </div>
+          <div class="right mono" id="q-${item.symbol}">${fmt(item.quantity)}</div>
+          <div class="right mono" id="avg-${item.symbol}">${fmt(item.avgPrice)}</div>
+          <div class="right mono price" id="cur-${item.symbol}">${fmt(item.currentPrice)}</div>
+          <div class="right mono" id="pnl-${item.symbol}">${fmt(item.pnlAmount)}</div>
+          <div class="right mono" id="rate-${item.symbol}">${pct(item.pnlRate)}</div>
+        </div>
+      `;
+      box.appendChild(row);
+      updateRowColor(item.symbol, item.pnlAmount); // 색상
+    });
+  }
+
+  function updateRowColor(symbol, pnlAmount) {
+    const priceEl = el('cur-' + symbol);
+    const pnlEl = el('pnl-' + symbol);
+    const rateEl = el('rate-' + symbol);
+    const up = Number(pnlAmount) >= 0;
+    [priceEl, pnlEl, rateEl].forEach(e => {
+      if (!e) {
+        return;
+      }
+      e.classList.remove('up', 'down');
+      e.classList.add(up ? 'up' : 'down');
+    });
+  }
+
+  // ====== 구독/실시간 계산 ======
+  function subscribeAll() {
+    if (!client?.active || !holdings?.items) {
+      return;
+    }
+    holdings.items.forEach(it => {
+      const topic = '/topic/ticker/' + it.symbol;
+      if (subs[it.symbol]) {
+        return;
+      } // 이미 구독 중
+      subs[it.symbol] = client.subscribe(topic, (msg) => {
+        try {
+          const t = JSON.parse(msg.body); // TickerMessage
+          // 현재가 갱신
+          const cur = Number(t.tradePrice);
+          el('cur-' + it.symbol).textContent = fmt(cur);
+
+          // 보유 수량/평단
+          const qty = Number(it.quantity);
+          const avg = Number(it.avgPrice);
+
+          // 손익 원/률 재계산
+          const invest = avg * qty;
+          const current = cur * qty;
+          const pnlAmt = current - invest;
+          const pnlRate = safeDiv(pnlAmt, invest);
+
+          el('pnl-' + it.symbol).textContent = fmt(pnlAmt);
+          el('rate-' + it.symbol).textContent = pct(pnlRate);
+          updateRowColor(it.symbol, pnlAmt);
+
+          // 포트폴리오 합계(가중)
+          recalcPortfolio();
+        } catch (e) {
+          log('parse err: ' + e.message);
+        }
+      }, {id: 'sub-' + it.symbol});
+      log('🧷 SUB ' + topic);
+    });
+  }
+
+  function unsubscribeAll() {
+    Object.values(subs).forEach(s => s.unsubscribe());
+    for (const k in subs) {
+      delete subs[k];
+    }
+  }
+
+  function recalcPortfolio() {
+    if (!holdings) {
+      return;
+    }
+    const totalInvestment = Number(holdings.portfolio.totalInvestment || 0); // 고정
+    const cashBalance = Number(holdings.portfolio.cashBalance || 0);     // 고정
+
+    // Σ pnlAmount (DOM에서 읽어 합산)
+    let sumPnl = 0;
+    (holdings.items || []).forEach(it => {
+      const pnlText = el('pnl-' + it.symbol)?.textContent?.replaceAll(',', '') || '0';
+      sumPnl += Number(pnlText);
+    });
+
+    // 총손익률 = 총손익 / 투자자산 (가중)
+    const totalRate = safeDiv(sumPnl, totalInvestment);
+
+    el('totalPnlAmount').textContent = fmt(sumPnl);
+    el('totalPnlRate').textContent = pct(totalRate);
+
+    // 총 자산(표시용) = 투자자산 + 현금자산 (설명상 고정)
+    el('cashBalance').textContent = fmt(cashBalance);
+    el('investBalance').textContent = fmt(totalInvestment);
+  }
+
+  // ====== 버튼 ======
+  el('btnLoad').onclick = loadHoldings;
+  el('btnConnectWs').onclick = () => {
+    if (!STOMP) {
+      return;
+    }
+    if (client?.active) {
+      client.deactivate();
+    }
+    client = createClientNative();
+    client.activate();
+  };
+  el('btnConnectSock').onclick = () => {
+    if (!STOMP) {
+      return;
+    }
+    if (client?.active) {
+      client.deactivate();
+    }
+    client = createClientSock();
+    client?.activate();
+  };
+  el('btnDisconnect').onclick = () => client?.deactivate();
+
+  // 자동 시퀀스(선택): 진입 시 보유현황 먼저 로드
+  loadHoldings();
+</script>
+</body>
+</html>
