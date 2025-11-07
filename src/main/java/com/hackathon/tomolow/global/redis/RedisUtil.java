@@ -38,6 +38,11 @@ public class RedisUtil {
     valueOperations.set(key, value, expireDuration);
   }
 
+  public void setData(String key, String value, Duration duration) {
+    ValueOperations<String, String> valueOperations = template.opsForValue();
+    valueOperations.set(key, value, duration);
+  }
+
   // 데이터 삭제
   public void deleteData(String key) {
     template.delete(key);
