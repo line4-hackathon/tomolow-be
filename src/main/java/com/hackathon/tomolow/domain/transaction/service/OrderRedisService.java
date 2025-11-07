@@ -1,6 +1,8 @@
 package com.hackathon.tomolow.domain.transaction.service;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -17,12 +19,12 @@ public class OrderRedisService {
 
   private final RedisTemplate<String, String> redisTemplate;
 
-  private String buyKey(String stockId) {
-    return "order:book:BUY:" + stockId;
+  private String buyKey(String marketId) {
+    return "order:book:BUY:" + marketId;
   }
 
-  private String sellKey(String stockId) {
-    return "order:book:SELL:" + stockId;
+  private String sellKey(String marketId) {
+    return "order:book:SELL:" + marketId;
   }
 
   private String detailKey(String orderId) {
@@ -31,7 +33,7 @@ public class OrderRedisService {
 
   /** 주문 저장 */
   public void saveOrder(
-      String stockId,
+      String marketId,
       String orderId,
       TradeType tradeType,
       BigDecimal price,
@@ -40,9 +42,11 @@ public class OrderRedisService {
     double priceDouble = price.doubleValue();
 
     // 대기주문을 위해 ZSET 삽입
-    if (tradeType == TradeType.BUY)
-      redisTemplate.opsForZSet().add(buyKey(stockId), orderId, priceDouble);
-    else redisTemplate.opsForZSet().add(sellKey(stockId), orderId, priceDouble);
+    if (tradeType == TradeType.BUY) {
+      redisTemplate.opsForZSet().add(buyKey(marketId), orderId, priceDouble);
+    } else {
+      redisTemplate.opsForZSet().add(sellKey(marketId), orderId, priceDouble);
+    }
 
     // 주문 정보 저장
     redisTemplate.opsForHash().put(detailKey(orderId), "userId", userId);
@@ -53,14 +57,14 @@ public class OrderRedisService {
   }
 
   /** 최상위 매수/매도 orderId 조회 */
-  public String getHighestBuy(String stockId) {
-    return redisTemplate.opsForZSet().reverseRange(buyKey(stockId), 0, 0).stream()
+  public String getHighestBuy(String marketId) {
+    return redisTemplate.opsForZSet().reverseRange(buyKey(marketId), 0, 0).stream()
         .findFirst()
         .orElse(null);
   }
 
-  public String getLowestSell(String stockId) {
-    return redisTemplate.opsForZSet().range(sellKey(stockId), 0, 0).stream()
+  public String getLowestSell(String marketId) {
+    return redisTemplate.opsForZSet().range(sellKey(marketId), 0, 0).stream()
         .findFirst()
         .orElse(null);
   }
@@ -73,8 +77,11 @@ public class OrderRedisService {
 
   public BigDecimal getPrice(String orderId) {
     String value = (String) redisTemplate.opsForHash().get(detailKey(orderId), "price");
-    if (value == null) throw new CustomException(TransactionErrorCode.PRICE_NOT_EXIST);
-    else return new BigDecimal(value);
+    if (value == null) {
+      throw new CustomException(TransactionErrorCode.PRICE_NOT_EXIST);
+    } else {
+      return new BigDecimal(value);
+    }
   }
 
   public String getUserId(String orderId) {
@@ -82,8 +89,16 @@ public class OrderRedisService {
   }
 
   /** 잔량 업데이트 */
-  public void updateRemaining(String orderId, int remaining) {
-    redisTemplate.opsForHash().put(detailKey(orderId), "remaining", String.valueOf(remaining));
+  public void updateOrRemove(String orderId, String marketId, TradeType tradeType, int quantity) {
+    String detail = detailKey(orderId);
+
+    int remaining = getRemainingQuantity(orderId) - quantity;
+
+    if (remaining <= 0) {
+      removeOrder(marketId, tradeType, orderId);
+    } else {
+      redisTemplate.opsForHash().put(detail, "remaining", String.valueOf(remaining));
+    }
   }
 
   /** 주문 제거 */
@@ -96,6 +111,38 @@ public class OrderRedisService {
   /** 전체 데이터 삭제 */
   public void deleteAllOrders() {
     var keys = redisTemplate.keys("order:*");
-    if (keys != null && !keys.isEmpty()) redisTemplate.delete(keys);
+    if (keys != null && !keys.isEmpty()) {
+      redisTemplate.delete(keys);
+    }
+  }
+
+  /** 특정 가격 이상의 매수 주문 조회 */
+  public List<String> findBuyOrderAtOrAbovePrice(String marketId, BigDecimal marketPrice) {
+    var result =
+        redisTemplate
+            .opsForZSet()
+            .reverseRangeByScore(
+                buyKey(marketId), marketPrice.doubleValue(), Double.POSITIVE_INFINITY);
+    return (result != null) ? result.stream().toList() : List.of();
+  }
+
+  /** 특정 가격 이하의 매도 주문 조회 */
+  public List<String> findSellOrderAtOrBelowPrice(String marketId, BigDecimal marketPrice) {
+    var result =
+        redisTemplate
+            .opsForZSet()
+            .rangeByScore(sellKey(marketId), Double.NEGATIVE_INFINITY, marketPrice.doubleValue());
+    return (result != null) ? result.stream().toList() : List.of();
+  }
+
+  // 주문이 남아있는 marketId들을 보관하는 세트의 키 이름
+  private String pendingSetKey() {
+    return "order:pending:markets";
+  }
+
+  // 세트에서 모든 marketId를 가져온다
+  public Set<String> getPendingMarketIds() {
+    Set<String> s = redisTemplate.opsForSet().members(pendingSetKey());
+    return (s == null) ? Set.of() : s;
   }
 }

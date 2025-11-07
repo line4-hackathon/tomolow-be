@@ -1,8 +1,5 @@
-package com.hackathon.tomolow.domain.transaction.entity;
+package com.hackathon.tomolow.domain.userInterestedMarket.entity;
 
-import java.math.BigDecimal;
-
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -11,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import com.hackathon.tomolow.domain.market.entity.Market;
 import com.hackathon.tomolow.domain.user.entity.User;
@@ -27,27 +25,24 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Table(name = "transaction")
-public class Transaction extends BaseTimeEntity {
+@Table(
+    name = "user_interested_market",
+    uniqueConstraints = {
+      @UniqueConstraint(
+          name = "uk_user_market",
+          columnNames = {"user_id", "market_id"})
+    })
+public class UserInterestedMarket extends BaseTimeEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(name = "quantity", nullable = false)
-  private int quantity; // 거래 수량
-
-  @Column(name = "trade_type", nullable = false)
-  private TradeType tradeType;
-
-  @Column(name = "price", nullable = false)
-  private BigDecimal price;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user; // 관심 등록한 유저
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "market_id", nullable = false)
-  private Market market; // 거래한 종목
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+  private Market market; // 관심 등록한 주식
 }
