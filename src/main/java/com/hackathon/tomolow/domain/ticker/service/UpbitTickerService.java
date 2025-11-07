@@ -43,6 +43,7 @@ public class UpbitTickerService {
   private final MarketRepository marketRepository;
 
   private final PriceTickDispatcher tickDispatcher; // 추가: 틱을 매칭기로 넘겨줄 컴포넌트
+  // private final PortfolioIncrementService portfolioIncrementService; // 추가: 홈화면 포트폴리오 증분 누적
 
   // 심볼→이름 캐시
   private final Map<String, String> nameCache = new ConcurrentHashMap<>();
@@ -194,6 +195,9 @@ public class UpbitTickerService {
 
       // ✅ 틱이 온 심볼만 매칭 트리거(논블로킹)
       tickDispatcher.onTick(symbol, tradePrice);
+
+      // ✅ (추가) 포트폴리오 증분 누적 -> 스케줄러 삭제하면서, 증분로직 삭제, 증분 메서드 삭제.
+      // portfolioIncrementService.onTick(symbol, tradePrice);
 
     } catch (Exception e) {
       log.warn("Ticker parse/broadcast error: {}", e.getMessage());

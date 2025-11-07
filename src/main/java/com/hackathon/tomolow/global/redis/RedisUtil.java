@@ -58,4 +58,9 @@ public class RedisUtil {
     String value = getData(key);
     return value != null ? Long.parseLong(value) : 0L;
   }
+
+  // 추가
+  public org.springframework.data.redis.core.StringRedisTemplate getTemplate() {
+    return this.template;
+  }
 }
