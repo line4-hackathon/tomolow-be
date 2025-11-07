@@ -1,14 +1,17 @@
 package com.hackathon.tomolow.domain.ticker.service;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+
+import org.springframework.stereotype.Service;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hackathon.tomolow.domain.ticker.dto.TickerMessage;
 import com.hackathon.tomolow.domain.transaction.exception.TransactionErrorCode;
 import com.hackathon.tomolow.global.exception.CustomException;
 import com.hackathon.tomolow.global.redis.RedisUtil;
-import java.math.BigDecimal;
-import java.time.Instant;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -47,9 +50,7 @@ public class PriceQueryService {
     throw new CustomException(TransactionErrorCode.PRICE_NOT_EXIST, "시세 없음: " + symbol);
   }
 
-  /**
-   * (선택) 최대 허용 지연(ms)을 체크하고 싶으면 사용 tradeTimestamp가 maxAgeMs 이내면 가격을 반환, 아니면 예외
-   */
+  /** (선택) 최대 허용 지연(ms)을 체크하고 싶으면 사용 tradeTimestamp가 maxAgeMs 이내면 가격을 반환, 아니면 예외 */
   public BigDecimal getFreshTradePriceOrThrow(String symbol, long maxAgeMs) {
     String json = redisUtil.getData("ticker:" + symbol);
     if (json == null) {

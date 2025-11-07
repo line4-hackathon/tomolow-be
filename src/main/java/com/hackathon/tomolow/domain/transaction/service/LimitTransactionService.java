@@ -1,5 +1,10 @@
 package com.hackathon.tomolow.domain.transaction.service;
 
+import java.math.BigDecimal;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+
 import com.hackathon.tomolow.domain.market.entity.Market;
 import com.hackathon.tomolow.domain.market.exception.MarketErrorCode;
 import com.hackathon.tomolow.domain.market.repository.MarketRepository;
@@ -16,10 +21,8 @@ import com.hackathon.tomolow.domain.userMarketHolding.exception.UserMarketHoldin
 import com.hackathon.tomolow.domain.userMarketHolding.repository.UserMarketHoldingRepository;
 import com.hackathon.tomolow.global.exception.CustomException;
 import com.hackathon.tomolow.global.security.SecurityUtil;
-import java.math.BigDecimal;
-import java.util.UUID;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -34,9 +37,7 @@ public class LimitTransactionService {
   private final MarketService marketService;
   private final PriceQueryService priceQueryService;
 
-  /**
-   * 지정가 매수
-   */
+  /** 지정가 매수 */
   public String limitBuy(Long userId, Long marketId, OrderRequestDto orderRequestDto) {
     Market market =
         marketRepository
@@ -78,9 +79,7 @@ public class LimitTransactionService {
     return orderId;
   }
 
-  /**
-   * 지정가 매도
-   */
+  /** 지정가 매도 */
   public String limitSell(Long userId, Long marketId, OrderRequestDto orderRequestDto) {
     Market market =
         marketRepository
