@@ -1,6 +1,7 @@
 package com.hackathon.tomolow.domain.chat.service;
 
 import java.time.Duration;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -11,7 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hackathon.tomolow.domain.chat.dto.AIChatResponseDto;
+import com.hackathon.tomolow.domain.chat.dto.ChatRedisSaveDto;
 import com.hackathon.tomolow.domain.chat.dto.ChatRequestDto;
 import com.hackathon.tomolow.domain.chat.dto.ChatResponseDto;
 import com.hackathon.tomolow.domain.chat.exception.ChatErrorCode;
@@ -25,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 public class ChatResponseService {
 
   private final RedisUtil redisUtil;
+  private static final ObjectMapper objectMapper = new ObjectMapper();
 
   @Value("${CHAT_API_URL}")
   private String CHAT_API_URL;
@@ -59,8 +63,8 @@ public class ChatResponseService {
     }
 
     // 질문과 응답을 Redis에 저장
-    String key = generateCacheKey(userId, chatRequestDto.getQuestion());
-    redisUtil.setData(key, aiChatResponseDto.getAnswer(), CACHE_TTL);
+    String key = generateKey(userId, chatRequestDto.getQuestion());
+    saveChatInRedis(userId, key, chatRequestDto.getQuestion(), aiChatResponseDto.getAnswer());
 
     return ChatResponseDto.builder()
         .answer(aiChatResponseDto.getAnswer())
@@ -69,7 +73,21 @@ public class ChatResponseService {
         .build();
   }
 
-  private String generateCacheKey(Long userId, String question) {
-    return "CHAT:" + userId + ":" + question.hashCode();
+  private String generateKey(Long userId, String question) {
+    return "CHAT:" + userId + ":" + question.hashCode() + UUID.randomUUID();
+  }
+
+  private void saveChatInRedis(Long userId, String key, String question, String answer) {
+    ChatRedisSaveDto qna =
+        ChatRedisSaveDto.builder().question(question).answer(answer).key(key).build();
+
+    try {
+      String json = objectMapper.writeValueAsString(qna);
+      redisUtil.setData(key, json, CACHE_TTL);
+      // key 목록을 리스트로 정리
+      redisUtil.pushToList("CHAT_KEYS:" + userId, key);
+    } catch (Exception e) {
+      throw new CustomException(ChatErrorCode.JSON_MAPPING_ERROR);
+    }
   }
 }
