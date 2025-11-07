@@ -50,10 +50,17 @@ public class OrderRedisService {
 
     // 주문 정보 저장
     redisTemplate.opsForHash().put(detailKey(orderId), "userId", userId);
+    redisTemplate.opsForHash().put(detailKey(orderId), "marketId", marketId); // ✅ 추가(무해)
     redisTemplate.opsForHash().put(detailKey(orderId), "price", String.valueOf(price));
     redisTemplate.opsForHash().put(detailKey(orderId), "quantity", String.valueOf(quantity));
     redisTemplate.opsForHash().put(detailKey(orderId), "remaining", String.valueOf(quantity));
     redisTemplate.opsForHash().put(detailKey(orderId), "tradeType", tradeType.name());
+
+    // ✅ 유저별 미체결 Set에 등록
+    redisTemplate.opsForSet().add(userOpenOrdersKey(userId), orderId);
+
+    // ✅ pending market 세트에 마켓 등록
+    redisTemplate.opsForSet().add(pendingSetKey(), marketId);
   }
 
   /** 최상위 매수/매도 orderId 조회 */
@@ -88,6 +95,17 @@ public class OrderRedisService {
     return (String) redisTemplate.opsForHash().get(detailKey(orderId), "userId");
   }
 
+  // ✅ 주문 → 마켓ID
+  public String getOrderMarketId(String orderId) {
+    return (String) redisTemplate.opsForHash().get(detailKey(orderId), "marketId");
+  }
+
+  // ✅ (선택) 주문 side
+  public TradeType getTradeType(String orderId) {
+    String v = (String) redisTemplate.opsForHash().get(detailKey(orderId), "tradeType");
+    return (v == null) ? null : TradeType.valueOf(v);
+  }
+
   /** 잔량 업데이트 */
   public void updateOrRemove(String orderId, String marketId, TradeType tradeType, int quantity) {
     String detail = detailKey(orderId);
@@ -102,10 +120,24 @@ public class OrderRedisService {
   }
 
   /** 주문 제거 */
-  public void removeOrder(String stockId, TradeType tradeType, String orderId) {
-    String key = tradeType == TradeType.BUY ? buyKey(stockId) : sellKey(stockId);
+  public void removeOrder(String marketId, TradeType tradeType, String orderId) {
+    String key = tradeType == TradeType.BUY ? buyKey(marketId) : sellKey(marketId);
+
+    // ✅ userId를 먼저 읽어와 유저 세트에서 제거
+    String detail = detailKey(orderId);
+    String userId = (String) redisTemplate.opsForHash().get(detail, "userId");
+
     redisTemplate.opsForZSet().remove(key, orderId);
     redisTemplate.delete(detailKey(orderId));
+
+    if (userId != null) {
+      redisTemplate.opsForSet().remove(userOpenOrdersKey(userId), orderId); // ✅
+    }
+
+    // ✅ 해당 마켓의 BUY/SELL ZSET이 모두 비었으면 pending 세트에서도 제거
+    if (!hasAnyOpenOrdersForMarket(marketId)) {
+      redisTemplate.opsForSet().remove(pendingSetKey(), marketId);
+    }
   }
 
   /** 전체 데이터 삭제 */
@@ -135,6 +167,26 @@ public class OrderRedisService {
     return (result != null) ? result.stream().toList() : List.of();
   }
 
+  // ✅ 유저별 미체결 주문 목록(주문ID) 조회
+  public Set<String> listUserOpenOrderIds(String userId) {
+    Set<String> s = redisTemplate.opsForSet().members(userOpenOrdersKey(userId));
+    return (s == null) ? Set.of() : s;
+  }
+
+  // ✅ 해당 마켓에 미체결 주문이 하나라도 남아있는지
+  private boolean hasAnyOpenOrdersForMarket(String marketId) {
+    Long buyCnt = redisTemplate.opsForZSet().zCard(buyKey(marketId));
+    Long sellCnt = redisTemplate.opsForZSet().zCard(sellKey(marketId));
+    long b = (buyCnt == null) ? 0L : buyCnt;
+    long s = (sellCnt == null) ? 0L : sellCnt;
+    return (b + s) > 0;
+  }
+
+  // ✅ 유저별 미체결 주문 목록(주문ID Set)
+  private String userOpenOrdersKey(String userId) {
+    return "user:openOrders:" + userId;
+  }
+
   // 주문이 남아있는 marketId들을 보관하는 세트의 키 이름
   private String pendingSetKey() {
     return "order:pending:markets";
@@ -144,5 +196,16 @@ public class OrderRedisService {
   public Set<String> getPendingMarketIds() {
     Set<String> s = redisTemplate.opsForSet().members(pendingSetKey());
     return (s == null) ? Set.of() : s;
+  }
+
+  public String ensureOrderMarketId(String orderId, String fallbackMarketId) {
+    Object v = redisTemplate.opsForHash().get(detailKey(orderId), "marketId");
+    if (v != null) return v.toString();
+    if (fallbackMarketId != null) {
+      // 과거 주문 치유(백필)
+      redisTemplate.opsForHash().put(detailKey(orderId), "marketId", fallbackMarketId);
+      return fallbackMarketId;
+    }
+    return null;
   }
 }
