@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.hackathon.tomolow.domain.market.repository.MarketRepository;
+import com.hackathon.tomolow.domain.portfilio.service.PortfolioPnlService;
 import com.hackathon.tomolow.domain.transaction.service.MatchService;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class PriceTickDispatcher {
   private final ConcurrentMap<String, Semaphore> running = new ConcurrentHashMap<>();
   private final ExecutorService pool =
       Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors() / 2));
+  private final PortfolioPnlService portfolioPnlService;
 
   public void onTick(String symbol, BigDecimal price) {
     lastPrice.put(symbol, price);
@@ -43,6 +45,8 @@ public class PriceTickDispatcher {
             if (p != null) {
               // 👇 Redis 오더북 기반 매칭 (시장가 기준)
               matchService.matchByMarketPrice(loadMarketIdBySymbol(symbol), p);
+              // ✅ 신규: 이 심볼 보유 + 온라인 유저에게 총손익 푸시
+              portfolioPnlService.pushPnlForSymbol(symbol);
             }
           } finally {
             sem.release();

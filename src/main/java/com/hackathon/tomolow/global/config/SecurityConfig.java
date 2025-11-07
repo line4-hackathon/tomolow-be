@@ -63,7 +63,12 @@ public class SecurityConfig {
                     .permitAll()
                     // 우리가 쓰는 파일/경로 추가 허용
                     .requestMatchers(
-                        "/", "/index.html", "/test.html", "/holding-test.html", "/favicon.ico")
+                        "/",
+                        "/index.html",
+                        "/test.html",
+                        "/holding-test.html",
+                        "holding-ws-test.html",
+                        "/favicon.ico")
                     .permitAll()
                     .requestMatchers("/js/**", "/css/**", "/images/**", "/webjars/**")
                     .permitAll()
