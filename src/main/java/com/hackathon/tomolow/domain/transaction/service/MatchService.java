@@ -170,9 +170,12 @@ public class MatchService {
     holding.subtractQuantity(quantity);
 
     // 3. 사용자 자산 변화
-    BigDecimal totalPrice = tradePrice.multiply(BigDecimal.valueOf(quantity));
+    BigDecimal totalPrice = tradePrice.multiply(BigDecimal.valueOf(quantity)); // 매도금액
     user.addCashBalance(totalPrice);
-    user.subtractInvestmentBalance(totalPrice);
+    // user.subtractInvestmentBalance(totalPrice);
+    // ✅ 투자자산(매입원금)은 '원가'로 감소해야 함
+    BigDecimal costBasis = holding.getAvgPrice().multiply(BigDecimal.valueOf(quantity));
+    user.subtractInvestmentBalance(costBasis);
 
     // ===== 보유 미러/세트 업데이트 =====
     String symbol = market.getSymbol();

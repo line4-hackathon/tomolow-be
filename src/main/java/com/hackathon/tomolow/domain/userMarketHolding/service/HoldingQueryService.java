@@ -49,13 +49,20 @@ public class HoldingQueryService {
             ? BigDecimal.ZERO
             : totalPnl.divide(totalInvestment, 4, RoundingMode.HALF_UP);
 
+    BigDecimal sumCurrent = BigDecimal.ZERO;
+    for (UserMarketHolding h : holdings) {
+      BigDecimal cur = priceQueryService.getLastTradePriceOrThrow(h.getMarket().getSymbol());
+      sumCurrent = sumCurrent.add(cur.multiply(BigDecimal.valueOf(h.getQuantity())));
+    }
+
     PortfolioSummaryResponse portfolio =
         PortfolioSummaryResponse.builder()
             .totalInvestment(totalInvestment) // ✅ 투자자산 (고정)
             .cashBalance(cashBalance) // ✅ 현금자산 (고정)
             .totalPnlAmount(totalPnl) // ✅ 투자손익원
             .totalPnlRate(pnlRate) // ✅ 투자손익률
-            .totalCurrentValue(totalInvestment.add(cashBalance)) // ✅ 전체자산
+            // .totalCurrentValue(totalInvestment.add(cashBalance)) // ✅ 전체자산
+            .totalCurrentValue(cashBalance.add(sumCurrent)) // ✅ 현금 + 보유시가
             .build();
 
     return HoldingsResponse.builder()
