@@ -15,6 +15,8 @@ import com.hackathon.tomolow.domain.chat.dto.ChatSaveRequestDto;
 import com.hackathon.tomolow.domain.chat.service.ChatResponseService;
 import com.hackathon.tomolow.domain.chat.service.ChatSaveService;
 import com.hackathon.tomolow.domain.chat.service.ChatService;
+import com.hackathon.tomolow.domain.userMarketHolding.dto.UserMarketHoldingResponseDto;
+import com.hackathon.tomolow.domain.userMarketHolding.service.UserMarketHoldingService;
 import com.hackathon.tomolow.global.response.BaseResponse;
 import com.hackathon.tomolow.global.security.CustomUserDetails;
 
@@ -31,6 +33,7 @@ public class ChatController {
   private final ChatResponseService chatResponseService;
   private final ChatService chatService;
   private final ChatSaveService chatSaveService;
+  private final UserMarketHoldingService userMarketHoldingService;
 
   @PostMapping("/question")
   @Operation(summary = "응답 받아오기", description = "질문에 대한 응답을 받아오기 위한 API")
@@ -60,5 +63,15 @@ public class ChatController {
 
     chatSaveService.saveChat(chatSaveRequestDto, userId);
     return ResponseEntity.ok(BaseResponse.success(null));
+  }
+
+  @GetMapping("/market/holding")
+  @Operation(summary = "보유 주식 조회하기", description = "보유 주식 조회를 위한 API")
+  public ResponseEntity<BaseResponse<?>> getMarketOwn(
+      @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+    Long userId = customUserDetails.getUser().getId();
+    List<UserMarketHoldingResponseDto> userMarketHoldings =
+        userMarketHoldingService.getUserMarketHoldings(userId);
+    return ResponseEntity.ok(BaseResponse.success(userMarketHoldings));
   }
 }
