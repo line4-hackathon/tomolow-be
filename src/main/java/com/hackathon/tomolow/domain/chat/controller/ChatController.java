@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.*;
 import com.hackathon.tomolow.domain.chat.dto.ChatRedisSaveDto;
 import com.hackathon.tomolow.domain.chat.dto.ChatRequestDto;
 import com.hackathon.tomolow.domain.chat.dto.ChatResponseDto;
+import com.hackathon.tomolow.domain.chat.dto.ChatSaveRequestDto;
 import com.hackathon.tomolow.domain.chat.service.ChatResponseService;
+import com.hackathon.tomolow.domain.chat.service.ChatSaveService;
 import com.hackathon.tomolow.domain.chat.service.ChatService;
 import com.hackathon.tomolow.global.response.BaseResponse;
 import com.hackathon.tomolow.global.security.CustomUserDetails;
@@ -28,6 +30,7 @@ public class ChatController {
 
   private final ChatResponseService chatResponseService;
   private final ChatService chatService;
+  private final ChatSaveService chatSaveService;
 
   @PostMapping("/question")
   @Operation(summary = "응답 받아오기", description = "질문에 대한 응답을 받아오기 위한 API")
@@ -46,5 +49,16 @@ public class ChatController {
     Long userId = customUserDetails.getUser().getId();
     List<ChatRedisSaveDto> chatMessages = chatService.getChatMessages(userId);
     return ResponseEntity.ok(BaseResponse.success(chatMessages));
+  }
+
+  @PostMapping("/save")
+  @Operation(summary = "채팅 저장하기", description = "채팅 저장을 위한 API")
+  public ResponseEntity<BaseResponse<?>> saveChat(
+      @AuthenticationPrincipal CustomUserDetails customUserDetails,
+      @Valid @RequestBody ChatSaveRequestDto chatSaveRequestDto) {
+    Long userId = customUserDetails.getUser().getId();
+
+    chatSaveService.saveChat(chatSaveRequestDto, userId);
+    return ResponseEntity.ok(BaseResponse.success(null));
   }
 }
