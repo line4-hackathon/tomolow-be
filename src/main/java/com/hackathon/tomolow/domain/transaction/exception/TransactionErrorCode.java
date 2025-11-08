@@ -12,7 +12,9 @@ import lombok.Getter;
 public enum TransactionErrorCode implements BaseErrorCode {
   PRICE_NOT_EXIST("TRANSACTION_4001", "가격 정보가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
   INSUFFICIENT_BALANCE("TRANSACTION_4002", "잔액이 부족합니다.", HttpStatus.BAD_REQUEST),
-  TRADE_TYPE_NULL("TRANSACTION_4003", "trade type이 null입니다.", HttpStatus.NOT_FOUND);
+  TRADE_TYPE_NULL("TRANSACTION_4003", "trade type이 null입니다.", HttpStatus.NOT_FOUND),
+  PENDING_ORDER_NOT_EXIST(
+      "TRANSACTION_4004", "해당 orderId의 대기주문이 존재하지 않습니다", HttpStatus.BAD_REQUEST);
 
   private final String code;
   private final String message;

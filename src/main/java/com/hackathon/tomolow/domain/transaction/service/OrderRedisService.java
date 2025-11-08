@@ -135,14 +135,14 @@ public class OrderRedisService {
 
     String detail = detailKey(orderId);
 
+    String userId = (String) redisTemplate.opsForHash().get(detail, "userId");
+
     // order book과 detail에서 삭제
     redisTemplate.opsForZSet().remove(key, orderId);
     redisTemplate.delete(detailKey(orderId));
 
-    // 유저별 대기주문 세트에서 삭제
-    String userId = (String) redisTemplate.opsForHash().get(detail, "userId");
-
     if (userId != null) {
+      // 유저별 대기주문 세트에서 삭제
       redisTemplate.opsForSet().remove(userOpenOrdersKey(userId), orderId); // ✅
     }
 

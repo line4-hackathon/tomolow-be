@@ -63,6 +63,7 @@ public class PendingOrderController {
       @AuthenticationPrincipal CustomUserDetails customUserDetails,
       @RequestBody PendingOrderDeleteAndInfoRequestDto requestDto) {
     Long userId = customUserDetails.getUser().getId();
+    pendingOrderService.deletePendingOrder(userId, requestDto.getOrderId());
     return ResponseEntity.ok(BaseResponse.success(null));
   }
 }

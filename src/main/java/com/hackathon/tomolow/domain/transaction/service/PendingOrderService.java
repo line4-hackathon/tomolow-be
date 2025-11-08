@@ -30,6 +30,8 @@ public class PendingOrderService {
 
   public BigDecimal getLatestMarketPrice(String orderId) {
     String marketId = orderRedisService.getOrderMarketId(orderId);
+    if (marketId == null) throw new CustomException(TransactionErrorCode.PENDING_ORDER_NOT_EXIST);
+
     Market market =
         marketRepository
             .findById(Long.valueOf(marketId))
@@ -43,6 +45,8 @@ public class PendingOrderService {
     BigDecimal price = modifyRequestDto.getPrice();
 
     String marketId = orderRedisService.getOrderMarketId(orderId);
+    if (marketId == null) throw new CustomException(TransactionErrorCode.PENDING_ORDER_NOT_EXIST);
+
     Market market =
         marketRepository
             .findById(Long.valueOf(marketId))
@@ -74,5 +78,23 @@ public class PendingOrderService {
     // 매칭 시도
     BigDecimal marketPrice = priceQueryService.getLastTradePriceOrThrow(market.getSymbol());
     matchService.matchByMarketPrice(marketId, marketPrice);
+  }
+
+  public void deletePendingOrder(Long userId, String orderId) {
+    userRepository
+        .findById(userId)
+        .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+
+    String marketId = orderRedisService.getOrderMarketId(orderId);
+    if (marketId == null) throw new CustomException(TransactionErrorCode.PENDING_ORDER_NOT_EXIST);
+
+    marketRepository
+        .findById(Long.valueOf(marketId))
+        .orElseThrow(() -> new CustomException(MarketErrorCode.MARKET_NOT_FOUND));
+
+    TradeType tradeType = orderRedisService.getTradeType(orderId);
+    if (tradeType == null) throw new CustomException(TransactionErrorCode.TRADE_TYPE_NULL);
+
+    orderRedisService.removeOrder(marketId, tradeType, orderId);
   }
 }
