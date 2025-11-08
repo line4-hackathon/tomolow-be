@@ -1,9 +1,12 @@
 package com.hackathon.tomolow.domain.auth.controller;
 
-import jakarta.servlet.http.Cookie;
+import java.time.Duration;
+
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -48,14 +51,27 @@ public class AuthController {
             .getRefreshToken();
 
     // Set-Cookie 설정 (HttpOnly + Secure)
-    Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
-    refreshTokenCookie.setHttpOnly(true); // JavaScript로 접근 불가능
-    refreshTokenCookie.setSecure(true); // HTTPS 환경에서만 전송
-    refreshTokenCookie.setPath("/"); // 모든 경로에 대해 유효
-    refreshTokenCookie.setMaxAge(60 * 60 * 24 * 7); // 7일간 유지
+    // Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
+    // ✅ ResponseCookie 로 SameSite=None; Secure; HttpOnly; Path=/; Max-Age=7d 설정
+    ResponseCookie cookie =
+        ResponseCookie.from("refreshToken", refreshToken)
+            .httpOnly(true)
+            .secure(true) // SameSite=None일 땐 반드시 Secure
+            .sameSite("None") // ⬅️ 핵심
+            .path("/")
+            .maxAge(Duration.ofDays(7))
+            .build();
+
+    // refreshTokenCookie.setHttpOnly(true); // JavaScript로 접근 불가능
+    // refreshTokenCookie.setSecure(true); // HTTPS 환경에서만 전송
+    // refreshTokenCookie.setPath("/"); // 모든 경로에 대해 유효
+    // refreshTokenCookie.setMaxAge(60 * 60 * 24 * 7); // 7일간 유지
 
     // 응답에 쿠키 추가
-    response.addCookie(refreshTokenCookie);
+    // response.addCookie(refreshTokenCookie);
+
+    // 응답 헤더에 쿠키 추가
+    response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
     // 로그인 결과 응답 반환
     return ResponseEntity.ok(BaseResponse.success("로그인에 성공했습니다.", loginResponse));
