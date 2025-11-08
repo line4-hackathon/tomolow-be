@@ -16,4 +16,6 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
 
   // 업비트에 등록된 마켓만 가져오기
   List<Market> findAllByExchangeType(ExchangeType exchangeType);
+
+  List<Market> findAllBySymbolIn(Iterable<String> symbols);
 }

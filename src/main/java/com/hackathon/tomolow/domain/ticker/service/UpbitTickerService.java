@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hackathon.tomolow.domain.market.entity.ExchangeType;
 import com.hackathon.tomolow.domain.market.entity.Market;
 import com.hackathon.tomolow.domain.market.repository.MarketRepository;
+import com.hackathon.tomolow.domain.market.service.RankingService;
 import com.hackathon.tomolow.domain.ticker.dto.TickerMessage;
 import com.hackathon.tomolow.global.redis.RedisUtil;
 
@@ -59,6 +60,8 @@ public class UpbitTickerService {
 
   // 업비트에 한 번에 너무 많은 코드를 보내지 않도록 배치로 전송 (안전하게 80개 단위)
   private static final int SUBSCRIBE_BATCH_SIZE = 80;
+
+  private final RankingService rankingService;
 
   @PostConstruct
   public void connect() {
@@ -170,6 +173,7 @@ public class UpbitTickerService {
       BigDecimal changePrice = toBig(m.get("change_price")); // 전일대비 원
       BigDecimal prevClose = toBig(m.get("prev_closing_price")); // 전일 종가
       BigDecimal accVol24h = toBig(m.get("acc_trade_volume_24h"));
+      BigDecimal accAmt24h = toBig(m.get("acc_trade_price_24h")); // ✅ 추가
       long ts = ((Number) m.get("timestamp")).longValue();
 
       String marketName =
@@ -185,11 +189,15 @@ public class UpbitTickerService {
               .changePrice(changePrice)
               .prevClose(prevClose)
               .accVolume(accVol24h)
+              .accTradePrice24h(accAmt24h) // ✅
               .tradeTimestamp(ts)
               .build();
 
       redisUtil.setData("last_price:" + symbol, tradePrice.toPlainString());
       redisUtil.setData("ticker:" + symbol, om.writeValueAsString(dto));
+
+      // ✅ 랭킹 업데이트 트리거
+      rankingService.onTick(dto);
 
       messagingTemplate.convertAndSend("/topic/ticker/" + symbol, dto);
 
