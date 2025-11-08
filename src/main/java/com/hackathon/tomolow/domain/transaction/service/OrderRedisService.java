@@ -69,8 +69,8 @@ public class OrderRedisService {
     // 유저별 대기주문 Set에 등록
     redisTemplate.opsForSet().add(userOpenOrdersKey(userId), orderId);
 
-        // 마켓별 대기주문 세트에 마켓 등록
-        redisTemplate.opsForSet().add(pendingSetKey(), marketId);
+    // 마켓별 대기주문 세트에 마켓 등록
+    redisTemplate.opsForSet().add(pendingSetKey(), marketId);
   }
 
   /** 최상위 매수/매도 orderId 조회 */
