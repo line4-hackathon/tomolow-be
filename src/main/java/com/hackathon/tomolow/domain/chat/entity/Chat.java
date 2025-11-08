@@ -39,6 +39,10 @@ public class Chat extends BaseTimeEntity {
   @Column(name = "answer", nullable = false, columnDefinition = "TEXT")
   private String answer;
 
+  /** 채팅 중복 저장을 막기 위한 키 */
+  @Column(name = "chat_key", nullable = false, columnDefinition = "TEXT")
+  private String key;
+
   /** 질문한 유저 (FK) */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
