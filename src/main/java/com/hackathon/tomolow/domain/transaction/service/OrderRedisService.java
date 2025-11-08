@@ -31,6 +31,16 @@ public class OrderRedisService {
     return "order:detail:" + orderId;
   }
 
+  // 유저별 대기 주문 목록(주문ID Set) 조회용 key
+  private String userOpenOrdersKey(String userId) {
+    return "user:openOrders:" + userId;
+  }
+
+  // 주문이 남아있는 marketId들을 보관하는 세트의 키 이름
+  private String pendingSetKey() {
+    return "order:pending:markets";
+  }
+
   /** 주문 저장 */
   public void saveOrder(
       String marketId,
@@ -56,11 +66,11 @@ public class OrderRedisService {
     redisTemplate.opsForHash().put(detailKey(orderId), "remaining", String.valueOf(quantity));
     redisTemplate.opsForHash().put(detailKey(orderId), "tradeType", tradeType.name());
 
-    // ✅ 유저별 미체결 Set에 등록
+    // 유저별 대기주문 Set에 등록
     redisTemplate.opsForSet().add(userOpenOrdersKey(userId), orderId);
 
-    // ✅ pending market 세트에 마켓 등록
-    redisTemplate.opsForSet().add(pendingSetKey(), marketId);
+        // 마켓별 대기주문 세트에 마켓 등록
+        redisTemplate.opsForSet().add(pendingSetKey(), marketId);
   }
 
   /** 최상위 매수/매도 orderId 조회 */
@@ -123,18 +133,20 @@ public class OrderRedisService {
   public void removeOrder(String marketId, TradeType tradeType, String orderId) {
     String key = tradeType == TradeType.BUY ? buyKey(marketId) : sellKey(marketId);
 
-    // ✅ userId를 먼저 읽어와 유저 세트에서 제거
     String detail = detailKey(orderId);
-    String userId = (String) redisTemplate.opsForHash().get(detail, "userId");
 
+    // order book과 detail에서 삭제
     redisTemplate.opsForZSet().remove(key, orderId);
     redisTemplate.delete(detailKey(orderId));
+
+    // 유저별 대기주문 세트에서 삭제
+    String userId = (String) redisTemplate.opsForHash().get(detail, "userId");
 
     if (userId != null) {
       redisTemplate.opsForSet().remove(userOpenOrdersKey(userId), orderId); // ✅
     }
 
-    // ✅ 해당 마켓의 BUY/SELL ZSET이 모두 비었으면 pending 세트에서도 제거
+    // 해당 마켓의 BUY/SELL ZSET이 모두 비었으면 마켓별 대기주문 세트에서 제거
     if (!hasAnyOpenOrdersForMarket(marketId)) {
       redisTemplate.opsForSet().remove(pendingSetKey(), marketId);
     }
@@ -180,16 +192,6 @@ public class OrderRedisService {
     long b = (buyCnt == null) ? 0L : buyCnt;
     long s = (sellCnt == null) ? 0L : sellCnt;
     return (b + s) > 0;
-  }
-
-  // ✅ 유저별 미체결 주문 목록(주문ID Set)
-  private String userOpenOrdersKey(String userId) {
-    return "user:openOrders:" + userId;
-  }
-
-  // 주문이 남아있는 marketId들을 보관하는 세트의 키 이름
-  private String pendingSetKey() {
-    return "order:pending:markets";
   }
 
   // 세트에서 모든 marketId를 가져온다
