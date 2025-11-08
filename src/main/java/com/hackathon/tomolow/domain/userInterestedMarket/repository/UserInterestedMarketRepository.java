@@ -16,4 +16,7 @@ public interface UserInterestedMarketRepository extends JpaRepository<UserIntere
   void deleteByUser_IdAndMarket_Id(Long userId, Long marketId);
 
   List<UserInterestedMarket> findAllByUser_IdOrderByCreatedAtDesc(Long userId);
+
+  // 로그인 유저의 관심 마켓 id 목록 조회
+  List<UserInterestedMarket> findAllByUser_Id(Long userId);
 }
