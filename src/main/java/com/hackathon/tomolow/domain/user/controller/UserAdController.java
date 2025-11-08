@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hackathon.tomolow.domain.user.dto.response.TopUpResponse;
 import com.hackathon.tomolow.domain.user.entity.User;
-import com.hackathon.tomolow.domain.user.service.UserService;
+import com.hackathon.tomolow.domain.user.service.UserAdService;
 import com.hackathon.tomolow.global.response.BaseResponse;
 import com.hackathon.tomolow.global.security.CustomUserDetails;
 
@@ -21,10 +21,10 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/mypage/cash")
-@Tag(name = "User", description = "유저 관련 API")
+@Tag(name = "UserAd", description = "유저 광고 관련 API")
 public class UserAdController {
 
-  private final UserService userService;
+  private final UserAdService userAdService;
 
   @Operation(summary = "광고 보상 충전", description = "광고 시청 시 500,000원 지급")
   @PostMapping("/ad")
@@ -32,7 +32,7 @@ public class UserAdController {
       @AuthenticationPrincipal CustomUserDetails userDetails) {
 
     User user = userDetails.getUser();
-    TopUpResponse res = userService.topUpFixed(user, new BigDecimal("500000"));
+    TopUpResponse res = userAdService.topUpFixed(user, new BigDecimal("500000"));
     return ResponseEntity.ok(BaseResponse.success("광고 보상 충전 완료", res));
   }
 
@@ -42,7 +42,7 @@ public class UserAdController {
       @AuthenticationPrincipal CustomUserDetails userDetails) {
 
     User user = userDetails.getUser();
-    TopUpResponse res = userService.topUpFixed(user, new BigDecimal("10000000"));
+    TopUpResponse res = userAdService.topUpFixed(user, new BigDecimal("10000000"));
     return ResponseEntity.ok(BaseResponse.success("+1,000만원 충전 완료", res));
   }
 
@@ -52,7 +52,7 @@ public class UserAdController {
       @AuthenticationPrincipal CustomUserDetails userDetails) {
 
     User user = userDetails.getUser();
-    TopUpResponse res = userService.topUpFixed(user, new BigDecimal("30000000"));
+    TopUpResponse res = userAdService.topUpFixed(user, new BigDecimal("30000000"));
     return ResponseEntity.ok(BaseResponse.success("+3,000만원 충전 완료", res));
   }
 
@@ -62,7 +62,7 @@ public class UserAdController {
       @AuthenticationPrincipal CustomUserDetails userDetails) {
 
     User user = userDetails.getUser();
-    TopUpResponse res = userService.topUpFixed(user, new BigDecimal("50000000"));
+    TopUpResponse res = userAdService.topUpFixed(user, new BigDecimal("50000000"));
     return ResponseEntity.ok(BaseResponse.success("+5,000만원 충전 완료", res));
   }
 
@@ -72,7 +72,7 @@ public class UserAdController {
       @AuthenticationPrincipal CustomUserDetails userDetails) {
 
     User user = userDetails.getUser();
-    TopUpResponse res = userService.topUpFixed(user, new BigDecimal("100000000"));
+    TopUpResponse res = userAdService.topUpFixed(user, new BigDecimal("100000000"));
     return ResponseEntity.ok(BaseResponse.success("+1억원 충전 완료", res));
   }
 }
