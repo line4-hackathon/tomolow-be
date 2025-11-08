@@ -2,6 +2,7 @@ package com.hackathon.tomolow.domain.user.controller;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,12 +20,13 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/mypage")
-@Tag(name = "User", description = "유저 관련 API")
+@Tag(name = "UserChat", description = "저장된 채팅 조회 API")
 public class UserChatController {
 
   private final UserChatService userChatService;
 
   @GetMapping("/saved-chat")
+  @Operation(summary = "채팅 조회", description = "저장된 채팅 조회")
   public ResponseEntity<BaseResponse<?>> getSavedChats(
       @AuthenticationPrincipal CustomUserDetails customUserDetails) {
     Long userId = customUserDetails.getUser().getId();
