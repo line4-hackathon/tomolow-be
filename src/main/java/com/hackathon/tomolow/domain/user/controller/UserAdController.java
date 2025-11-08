@@ -20,14 +20,14 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api")
+@RequestMapping("/api/mypage/cash")
 @Tag(name = "User", description = "유저 관련 API")
-public class UserController {
+public class UserAdController {
 
   private final UserService userService;
 
   @Operation(summary = "광고 보상 충전", description = "광고 시청 시 500,000원 지급")
-  @PostMapping("/mypage/cash/ad")
+  @PostMapping("/ad")
   public ResponseEntity<BaseResponse<TopUpResponse>> topUpAd(
       @AuthenticationPrincipal CustomUserDetails userDetails) {
 
@@ -37,7 +37,7 @@ public class UserController {
   }
 
   @Operation(summary = "+1,000만원 충전", description = "버튼 클릭 시 1,000만원 충전")
-  @PostMapping("/mypage/cash/10m")
+  @PostMapping("/10m")
   public ResponseEntity<BaseResponse<TopUpResponse>> topUp10m(
       @AuthenticationPrincipal CustomUserDetails userDetails) {
 
@@ -47,7 +47,7 @@ public class UserController {
   }
 
   @Operation(summary = "+3,000만원 충전", description = "버튼 클릭 시 3,000만원 충전")
-  @PostMapping("/mypage/cash/30m")
+  @PostMapping("/30m")
   public ResponseEntity<BaseResponse<TopUpResponse>> topUp30m(
       @AuthenticationPrincipal CustomUserDetails userDetails) {
 
@@ -57,7 +57,7 @@ public class UserController {
   }
 
   @Operation(summary = "+5,000만원 충전", description = "버튼 클릭 시 5,000만원 충전")
-  @PostMapping("/mypage/cash/50m")
+  @PostMapping("/50m")
   public ResponseEntity<BaseResponse<TopUpResponse>> topUp50m(
       @AuthenticationPrincipal CustomUserDetails userDetails) {
 
@@ -67,7 +67,7 @@ public class UserController {
   }
 
   @Operation(summary = "+1억원 충전", description = "버튼 클릭 시 1억원 충전")
-  @PostMapping("/mypage/cash/100m")
+  @PostMapping("/100m")
   public ResponseEntity<BaseResponse<TopUpResponse>> topUp100m(
       @AuthenticationPrincipal CustomUserDetails userDetails) {
 
