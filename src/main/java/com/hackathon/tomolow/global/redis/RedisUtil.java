@@ -1,6 +1,7 @@
 package com.hackathon.tomolow.global.redis;
 
 import java.time.Duration;
+import java.util.List;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -38,6 +39,11 @@ public class RedisUtil {
     valueOperations.set(key, value, expireDuration);
   }
 
+  public void setData(String key, String value, Duration duration) {
+    ValueOperations<String, String> valueOperations = template.opsForValue();
+    valueOperations.set(key, value, duration);
+  }
+
   // 데이터 삭제
   public void deleteData(String key) {
     template.delete(key);
@@ -57,6 +63,15 @@ public class RedisUtil {
   public long getLongValue(String key) {
     String value = getData(key);
     return value != null ? Long.parseLong(value) : 0L;
+  }
+
+  // 리스트에 추가
+  public void pushToList(String key, String value) {
+    template.opsForList().rightPush(key, value);
+  }
+
+  public List<String> getList(String key) {
+    return template.opsForList().range(key, 0, -1);
   }
 
   // 추가
