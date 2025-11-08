@@ -210,4 +210,23 @@ public class OrderRedisService {
     }
     return null;
   }
+
+  /** order:detail의 price 수정 */
+  public void updatePrice(String orderId, BigDecimal price) {
+    String detail = detailKey(orderId);
+    redisTemplate.opsForHash().put(detailKey(orderId), "price", String.valueOf(price));
+  }
+
+  /** order book 업데이트 (삭제 및 재생성) */
+  public void updateOrderBook(
+      String orderId, String marketId, TradeType tradeType, BigDecimal price) {
+    double priceDouble = price.doubleValue();
+    String key = tradeType == TradeType.BUY ? buyKey(marketId) : sellKey(marketId);
+
+    // 삭제
+    redisTemplate.opsForZSet().remove(key, orderId);
+
+    // 재생성
+    redisTemplate.opsForZSet().add(key, orderId, priceDouble);
+  }
 }
