@@ -135,14 +135,14 @@ public class OrderRedisService {
 
     String detail = detailKey(orderId);
 
+    String userId = (String) redisTemplate.opsForHash().get(detail, "userId");
+
     // order book과 detail에서 삭제
     redisTemplate.opsForZSet().remove(key, orderId);
     redisTemplate.delete(detailKey(orderId));
 
-    // 유저별 대기주문 세트에서 삭제
-    String userId = (String) redisTemplate.opsForHash().get(detail, "userId");
-
     if (userId != null) {
+      // 유저별 대기주문 세트에서 삭제
       redisTemplate.opsForSet().remove(userOpenOrdersKey(userId), orderId); // ✅
     }
 
@@ -209,5 +209,24 @@ public class OrderRedisService {
       return fallbackMarketId;
     }
     return null;
+  }
+
+  /** order:detail의 price 수정 */
+  public void updatePrice(String orderId, BigDecimal price) {
+    String detail = detailKey(orderId);
+    redisTemplate.opsForHash().put(detailKey(orderId), "price", String.valueOf(price));
+  }
+
+  /** order book 업데이트 (삭제 및 재생성) */
+  public void updateOrderBook(
+      String orderId, String marketId, TradeType tradeType, BigDecimal price) {
+    double priceDouble = price.doubleValue();
+    String key = tradeType == TradeType.BUY ? buyKey(marketId) : sellKey(marketId);
+
+    // 삭제
+    redisTemplate.opsForZSet().remove(key, orderId);
+
+    // 재생성
+    redisTemplate.opsForZSet().add(key, orderId, priceDouble);
   }
 }

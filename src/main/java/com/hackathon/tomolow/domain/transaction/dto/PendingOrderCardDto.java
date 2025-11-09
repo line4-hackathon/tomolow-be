@@ -2,6 +2,8 @@ package com.hackathon.tomolow.domain.transaction.dto;
 
 import java.math.BigDecimal;
 
+import com.hackathon.tomolow.domain.transaction.entity.TradeType;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,4 +37,7 @@ public class PendingOrderCardDto {
 
   @Schema(description = "지정가(주문 가격)", example = "4975000.00")
   private BigDecimal limitPrice;
+
+  @Schema(description = "매수/매도 여부", example = "BUY")
+  private TradeType tradeType;
 }
