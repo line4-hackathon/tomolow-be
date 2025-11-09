@@ -1,6 +1,8 @@
 package com.hackathon.tomolow.domain.group.service;
 
+import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 
@@ -9,10 +11,14 @@ import com.hackathon.tomolow.domain.group.entity.Group;
 import com.hackathon.tomolow.domain.group.exception.GroupErrorCode;
 import com.hackathon.tomolow.domain.group.repository.GroupRepository;
 import com.hackathon.tomolow.domain.user.entity.User;
+import com.hackathon.tomolow.domain.user.exception.UserErrorCode;
+import com.hackathon.tomolow.domain.user.repository.UserRepository;
+import com.hackathon.tomolow.domain.userGroup.entity.UserGroup;
 import com.hackathon.tomolow.domain.userGroup.repository.UserGroupRepository;
 import com.hackathon.tomolow.global.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +26,7 @@ public class GroupEnterService {
 
   private final GroupRepository groupRepository;
   private final UserGroupRepository userGroupRepository;
+  private final UserRepository userRepository;
 
   public GroupSearchResponseDto searchGroup(String code) {
     Group group =
@@ -41,7 +48,52 @@ public class GroupEnterService {
         .build();
   }
 
-  // TODO : 그룹 참가 시 시드머니 충분한지, 활성화된 상태인지, 인원수 오버하지 않는지 확인
-  // TODO : 그룹 참가 시 totalMoney 업데이트, duration에 맞게 스케줄링 필요
-  // TODO : 그룹 참가 시 개인 현금 감소, 이미 가입하지 않았는지 체크
+  @Transactional
+  public Long joinGroup(Long userId, Long groupId) {
+    Group group =
+        groupRepository
+            .findById(groupId)
+            .orElseThrow(() -> new CustomException(GroupErrorCode.GROUP_NOT_FOUND));
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+
+    // 1. 그룹에 가입할 수 있는지 확인 ----------
+    // 1-1. 이미 가입한 그룹인지
+    if (userGroupRepository.existsByGroup_IdAndUser_Id(groupId, userId))
+      throw new CustomException(GroupErrorCode.GROUP_ALREADY_JOINED);
+
+    // 1-2. 그룹에 남은 자리가 있는지 - active하다면 멤버가 다 모인 것
+    if (group.getIsActive()) throw new CustomException(GroupErrorCode.GROUP_MEMBER_LIMIT_EXCEEDED);
+
+    // 1-3. 사용자 현금 잔액 >= 시드머니인지
+    if (user.getCashBalance().compareTo(group.getSeedMoney()) >= 0)
+      throw new CustomException(GroupErrorCode.GROUP_INSUFFICIENT_BALANCE);
+
+    // 2. 그룹 가입 처리 ----------
+    UserGroup userGroup =
+        UserGroup.builder()
+            .user(user)
+            .group(group)
+            .investmentBalance(BigDecimal.ZERO)
+            .cashBalance(group.getSeedMoney())
+            .build();
+
+    // 2-1. 그룹 총 자산 증가, 사용자 현금 자산 감소
+    group.addTotalMoney(group.getSeedMoney());
+    user.subtractCashBalance(group.getSeedMoney());
+
+    userGroupRepository.save(userGroup);
+
+    // 3. 목표 인원 수 달성 시 그룹 활성화 처리 ----------
+    long currentMemberCount = userGroupRepository.countByGroup_Id(group.getId());
+    if (currentMemberCount == group.getMemberCount()) {
+      group.setGroupActive(true);
+      group.setGroupActivatedAt(LocalDateTime.now());
+      // 스케줄러에 의해 duration만큼 지나면 종료 처리
+    }
+
+    return groupId;
+  }
 }

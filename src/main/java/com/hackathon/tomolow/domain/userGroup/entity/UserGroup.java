@@ -61,6 +61,10 @@ public class UserGroup extends BaseTimeEntity {
   @Column(name = "cash_balance", nullable = false, precision = 19, scale = 2)
   private BigDecimal cashBalance;
 
+  /** 최종 손익 금액 */
+  @Column(name = "final_pnl")
+  private BigDecimal finalPnl;
+
   /* ===== 편의 메서드 ===== */
 
   @PrePersist
