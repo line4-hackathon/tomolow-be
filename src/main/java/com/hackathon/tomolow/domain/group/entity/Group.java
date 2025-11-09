@@ -66,15 +66,21 @@ public class Group extends BaseTimeEntity {
   private User creator;
 
   /** 활성화된 시간 */
-  @Column(name = "is_active")
+  @Column(name = "actived_at")
   private LocalDateTime activatedAt;
+
+  /** 종료 예정 시간 */
+  @Column(name = "end_at")
+  private LocalDateTime endAt;
 
   /** 그룹 자산 갱신 */
   public void updateTotalMoney(BigDecimal totalMoney) {
     this.totalMoney = totalMoney;
   }
 
-  public void addTotalMoney(BigDecimal money) { this.totalMoney.add(money); }
+  public void addTotalMoney(BigDecimal money) {
+    this.totalMoney = this.totalMoney.add(money);
+  }
 
   /** 그룹 인원 증가 */
   public void increaseMemberCount() {
@@ -94,8 +100,8 @@ public class Group extends BaseTimeEntity {
   }
 
   /** 그룹 활성화 시간 */
-  public void setGroupActivatedAt(LocalDateTime activatedAt) {
+  public void setGroupActivatedAtAndEndAt(LocalDateTime activatedAt) {
     this.activatedAt = activatedAt;
+    this.endAt = activatedAt.plusDays(this.duration);
   }
-
 }
