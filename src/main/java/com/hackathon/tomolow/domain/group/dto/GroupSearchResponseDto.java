@@ -9,6 +9,8 @@ import lombok.Data;
 @Builder
 public class GroupSearchResponseDto {
 
+  private Long groupId;
+
   private String groupName;
 
   private String creatorNickname;

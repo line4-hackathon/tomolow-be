@@ -32,6 +32,7 @@ public class GroupEnterService {
     long currentMemberCount = userGroupRepository.countByGroup_Id(group.getId());
 
     return GroupSearchResponseDto.builder()
+        .groupId(group.getId())
         .groupName(group.getName())
         .creatorNickname(creator.getNickname())
         .memberCount(group.getMemberCount())
