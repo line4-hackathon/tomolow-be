@@ -2,14 +2,9 @@ package com.hackathon.tomolow.domain.group.entity;
 
 import java.math.BigDecimal;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 
+import com.hackathon.tomolow.domain.user.entity.User;
 import com.hackathon.tomolow.global.common.BaseTimeEntity;
 
 import lombok.AccessLevel;
@@ -63,6 +58,10 @@ public class Group extends BaseTimeEntity {
   /** 현재 활성화된 상태인지 (종료/인원부족 X) */
   @Column(name = "is_active")
   private Boolean isActive;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "creator_id")
+  private User creator;
 
   /** 그룹 자산 갱신 */
   public void updateTotalMoney(BigDecimal totalMoney) {
