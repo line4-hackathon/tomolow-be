@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hackathon.tomolow.domain.market.entity.Market;
 import com.hackathon.tomolow.domain.market.repository.MarketRepository;
 import com.hackathon.tomolow.domain.transaction.dto.PendingOrderCardDto;
+import com.hackathon.tomolow.domain.transaction.entity.TradeType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -70,6 +71,8 @@ public class PendingOrderQueryService {
 
       var price = orderRedisService.getPrice(oid); // 지정가
 
+      TradeType tradeType = orderRedisService.getTradeType(oid);
+
       cards.add(
           PendingOrderCardDto.builder()
               .orderId(oid)
@@ -77,8 +80,9 @@ public class PendingOrderQueryService {
               .symbol(m.getSymbol())
               .name(m.getName())
               .imageUrl(m.getImgUrl())
-              .quantity(remaining) // ✅ 남은 수량
-              .limitPrice(price) // ✅ 지정가
+              .quantity(remaining)
+              .limitPrice(price)
+              .tradeType(tradeType)
               .build());
     }
 
