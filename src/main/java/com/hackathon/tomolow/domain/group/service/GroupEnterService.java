@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hackathon.tomolow.domain.group.dto.GroupSearchResponseDto;
 import com.hackathon.tomolow.domain.group.entity.Group;
@@ -18,7 +19,6 @@ import com.hackathon.tomolow.domain.userGroup.repository.UserGroupRepository;
 import com.hackathon.tomolow.global.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -68,7 +68,7 @@ public class GroupEnterService {
     if (group.getIsActive()) throw new CustomException(GroupErrorCode.GROUP_MEMBER_LIMIT_EXCEEDED);
 
     // 1-3. 사용자 현금 잔액 >= 시드머니인지
-    if (user.getCashBalance().compareTo(group.getSeedMoney()) >= 0)
+    if (user.getCashBalance().compareTo(group.getSeedMoney()) < 0)
       throw new CustomException(GroupErrorCode.GROUP_INSUFFICIENT_BALANCE);
 
     // 2. 그룹 가입 처리 ----------
@@ -90,7 +90,7 @@ public class GroupEnterService {
     long currentMemberCount = userGroupRepository.countByGroup_Id(group.getId());
     if (currentMemberCount == group.getMemberCount()) {
       group.setGroupActive(true);
-      group.setGroupActivatedAt(LocalDateTime.now());
+      group.setGroupActivatedAtAndEndAt(LocalDateTime.now());
       // 스케줄러에 의해 duration만큼 지나면 종료 처리
     }
 

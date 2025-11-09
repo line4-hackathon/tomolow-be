@@ -75,6 +75,7 @@ public class GroupService {
             .build();
 
     userGroupRepository.save(userGroup);
+    user.subtractCashBalance(group.getSeedMoney());
 
     return savedGroup.getId();
   }
