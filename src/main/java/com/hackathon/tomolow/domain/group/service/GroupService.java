@@ -47,7 +47,8 @@ public class GroupService {
 
     String groupCode = userId.hashCode() + UUID.randomUUID().toString();
     if (groupRepository.existsByCode(groupCode))
-      throw new CustomException(GroupErrorCode.GROUP_CODE_DUPLICATED, "이미 존재하는 그룹 코드입니다. 코드 재생성을 위해 다시 시도해주세요.");
+      throw new CustomException(
+          GroupErrorCode.GROUP_CODE_DUPLICATED, "이미 존재하는 그룹 코드입니다. 코드 재생성을 위해 다시 시도해주세요.");
 
     // 3. 그룹 생성
     Group group =
@@ -59,6 +60,7 @@ public class GroupService {
             .isActive(false)
             .code(groupCode)
             .totalMoney(seedMoney)
+            .creator(user)
             .build();
 
     Group savedGroup = groupRepository.save(group);
