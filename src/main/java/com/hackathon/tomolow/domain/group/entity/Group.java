@@ -1,6 +1,7 @@
 package com.hackathon.tomolow.domain.group.entity;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 
@@ -59,14 +60,21 @@ public class Group extends BaseTimeEntity {
   @Column(name = "is_active")
   private Boolean isActive;
 
+  /** 그룹을 생성한 사용자 */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "creator_id")
   private User creator;
+
+  /** 활성화된 시간 */
+  @Column(name = "is_active")
+  private LocalDateTime activatedAt;
 
   /** 그룹 자산 갱신 */
   public void updateTotalMoney(BigDecimal totalMoney) {
     this.totalMoney = totalMoney;
   }
+
+  public void addTotalMoney(BigDecimal money) { this.totalMoney.add(money); }
 
   /** 그룹 인원 증가 */
   public void increaseMemberCount() {
@@ -79,4 +87,15 @@ public class Group extends BaseTimeEntity {
       this.memberCount--;
     }
   }
+
+  /** 그룹 활성화/비활성화 */
+  public void setGroupActive(Boolean isActive) {
+    this.isActive = isActive;
+  }
+
+  /** 그룹 활성화 시간 */
+  public void setGroupActivatedAt(LocalDateTime activatedAt) {
+    this.activatedAt = activatedAt;
+  }
+
 }
