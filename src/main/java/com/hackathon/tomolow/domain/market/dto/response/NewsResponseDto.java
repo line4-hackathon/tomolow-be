@@ -12,5 +12,4 @@ public class NewsResponseDto {
   private String image_url;
 
   private String source_name;
-
 }
