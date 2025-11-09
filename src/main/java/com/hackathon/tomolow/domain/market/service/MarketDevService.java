@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class MarketService {
+public class MarketDevService {
 
   private final MarketRepository marketRepository;
   private final MarketMapper marketMapper;
