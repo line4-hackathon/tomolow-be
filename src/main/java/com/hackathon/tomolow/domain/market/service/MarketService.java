@@ -2,96 +2,75 @@ package com.hackathon.tomolow.domain.market.service;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestTemplate;
 
-import com.hackathon.tomolow.domain.market.dto.request.MarketCreateRequest;
-import com.hackathon.tomolow.domain.market.dto.request.MarketUpdateRequest;
-import com.hackathon.tomolow.domain.market.dto.response.MarketResponse;
+import com.hackathon.tomolow.domain.chat.exception.ChatErrorCode;
+import com.hackathon.tomolow.domain.market.dto.response.NewsResponseDto;
 import com.hackathon.tomolow.domain.market.entity.Market;
 import com.hackathon.tomolow.domain.market.exception.MarketErrorCode;
-import com.hackathon.tomolow.domain.market.mapper.MarketMapper;
 import com.hackathon.tomolow.domain.market.repository.MarketRepository;
 import com.hackathon.tomolow.global.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class MarketService {
 
+  @Value("${GET_NEWS_API_URL}")
+  String GET_NEWS_API_URL;
+
   private final MarketRepository marketRepository;
-  private final MarketMapper marketMapper;
 
-  @Transactional
-  public MarketResponse create(MarketCreateRequest req) {
-    if (marketRepository.existsBySymbol(req.getSymbol())) {
-      throw new CustomException(MarketErrorCode.MARKET_ALREADY_EXISTS);
-    }
-    Market saved =
-        marketRepository.save(
-            Market.builder()
-                .name(req.getName())
-                .symbol(req.getSymbol())
-                .assetType(req.getAssetType())
-                .exchangeType(req.getExchangeType())
-                .imgUrl(req.getImgUrl())
-                .build());
-    log.info("[Market 생성] symbol={}, name={}", saved.getSymbol(), saved.getName());
-    return marketMapper.toResponse(saved);
-  }
-
-  public List<MarketResponse> findAll() {
-    return marketRepository.findAll().stream().map(marketMapper::toResponse).toList();
-  }
-
-  public MarketResponse findOne(String symbol) {
+  public List<NewsResponseDto> getRecentNews(Long marketId) {
     Market market =
         marketRepository
-            .findBySymbol(symbol)
-            .orElseThrow(() -> new CustomException(MarketErrorCode.MARKET_NOT_FOUND));
-    return marketMapper.toResponse(market);
-  }
-
-  @Transactional
-  public MarketResponse update(MarketUpdateRequest req) {
-    Market market =
-        marketRepository
-            .findBySymbol(req.getSymbol())
+            .findById(marketId)
             .orElseThrow(() -> new CustomException(MarketErrorCode.MARKET_NOT_FOUND));
 
-    if (req.getNewName() != null) {
-      market.setName(req.getNewName());
-    }
-    if (req.getNewImgUrl() != null) {
-      market.setImgUrl(req.getNewImgUrl());
-    }
-    if (req.getNewAssetType() != null) {
-      market.setAssetType(req.getNewAssetType());
-    }
-    if (req.getNewExchangeType() != null) {
-      market.setExchangeType(req.getNewExchangeType());
+    String symbol = market.getSymbol();
+
+    // 글로벌 심볼로 파싱
+    if (symbol.contains("-")) symbol = symbol.split("-")[1];
+
+    // FastAPI에 요청
+    String requestUrl = GET_NEWS_API_URL + symbol;
+
+    RestTemplate restTemplate = new RestTemplate();
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+    List<NewsResponseDto> newsList;
+
+    try {
+      newsList =
+          restTemplate
+              .exchange(
+                  requestUrl,
+                  HttpMethod.GET,
+                  requestEntity,
+                  new ParameterizedTypeReference<List<NewsResponseDto>>() {})
+              .getBody();
+
+      if (newsList == null)
+        throw new CustomException(ChatErrorCode.EXTERNAL_API_ERROR, "외부 API로부터 응답을 받아오지 못했습니다.");
+
+    } catch (ResourceAccessException e) {
+      throw new CustomException(ChatErrorCode.EXTERNAL_API_ERROR, "외부 API 연결에 실패했습니다.");
+    } catch (CustomException e) {
+      throw e;
+    } catch (Exception e) {
+      System.out.println(e.getMessage());
+      throw new CustomException(ChatErrorCode.EXTERNAL_API_ERROR, "외부 API에서 알 수 없는 오류가 발생했습니다.");
     }
 
-    log.info(
-        "[Market 수정] symbol={}, name={}, assetType={}, exchangeType={}",
-        market.getSymbol(),
-        market.getName(),
-        market.getAssetType(),
-        market.getExchangeType());
-
-    return marketMapper.toResponse(market);
-  }
-
-  @Transactional
-  public void delete(String symbol) {
-    Market market =
-        marketRepository
-            .findBySymbol(symbol)
-            .orElseThrow(() -> new CustomException(MarketErrorCode.MARKET_NOT_FOUND));
-    marketRepository.delete(market);
-    log.info("[Market 삭제] symbol={}", symbol);
+    return newsList;
   }
 }

@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import com.hackathon.tomolow.domain.market.entity.Market;
 import com.hackathon.tomolow.domain.market.exception.MarketErrorCode;
 import com.hackathon.tomolow.domain.market.repository.MarketRepository;
-import com.hackathon.tomolow.domain.market.service.MarketService;
 import com.hackathon.tomolow.domain.ticker.service.PriceQueryService;
 import com.hackathon.tomolow.domain.transaction.dto.OrderRequestDto;
 import com.hackathon.tomolow.domain.transaction.entity.TradeType;
@@ -20,7 +19,6 @@ import com.hackathon.tomolow.domain.userMarketHolding.entity.UserMarketHolding;
 import com.hackathon.tomolow.domain.userMarketHolding.exception.UserMarketHoldingErrorCode;
 import com.hackathon.tomolow.domain.userMarketHolding.repository.UserMarketHoldingRepository;
 import com.hackathon.tomolow.global.exception.CustomException;
-import com.hackathon.tomolow.global.security.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,12 +27,10 @@ import lombok.RequiredArgsConstructor;
 public class LimitTransactionService {
 
   private final MarketRepository marketRepository;
-  private final SecurityUtil securityUtil;
   private final UserRepository userRepository;
   private final OrderRedisService orderRedisService;
   private final MatchService matchService;
   private final UserMarketHoldingRepository userMarketHoldingRepository;
-  private final MarketService marketService;
   private final PriceQueryService priceQueryService;
 
   /** 지정가 매수 */
