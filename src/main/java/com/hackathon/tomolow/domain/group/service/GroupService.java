@@ -35,15 +35,21 @@ public class GroupService {
             .findById(userId)
             .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 
-    // 유저 잔액 부족하지 않은지 체크
+    // 1. 유저 잔액 부족하지 않은지 체크
     BigDecimal seedMoney = groupCreateDto.getSeedMoney();
     if (user.getCashBalance().compareTo(seedMoney) < 0)
       throw new CustomException(
           GroupErrorCode.GROUP_INSUFFICIENT_BALANCE, "잔액이 부족하여 그룹을 생성할 수 없습니다.");
 
-    // 그룹 생성
-    String groupCode = userId.hashCode() + UUID.randomUUID().toString();
+    // 2. 동일 이름/코드의 그룹이 존재하지 않는지 확인
+    if (groupRepository.existsByName(groupCreateDto.getName()))
+      throw new CustomException(GroupErrorCode.GROUP_NAME_DUPLICATED);
 
+    String groupCode = userId.hashCode() + UUID.randomUUID().toString();
+    if (groupRepository.existsByCode(groupCode))
+      throw new CustomException(GroupErrorCode.GROUP_CODE_DUPLICATED, "이미 존재하는 그룹 코드입니다. 코드 재생성을 위해 다시 시도해주세요.");
+
+    // 3. 그룹 생성
     Group group =
         Group.builder()
             .name(groupCreateDto.getName())
@@ -57,7 +63,7 @@ public class GroupService {
 
     Group savedGroup = groupRepository.save(group);
 
-    // 그룹에 사용자 추가
+    // 4. 그룹에 사용자 추가
     UserGroup userGroup =
         UserGroup.builder()
             .user(user)
@@ -70,8 +76,4 @@ public class GroupService {
 
     return savedGroup.getId();
   }
-
-  // TODO : 그룹 참가 시 시드머니 충분한지, 활성화된 상태인지, 인원수 오버하지 않는지 확인
-  // TODO : 그룹 참가 시 totalMoney 업데이트, duration에 맞게 스케줄링 필요
-  // TODO : 그룹 참가 시 개인 현금 감소
 }
