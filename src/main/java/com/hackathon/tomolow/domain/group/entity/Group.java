@@ -42,7 +42,7 @@ public class Group extends BaseTimeEntity {
   @Column(name = "code", nullable = false, unique = true)
   private String code;
 
-  /** 현재 그룹 내 인원수 */
+  /** 그룹 내 기준 인원수 */
   @Column(name = "member_count", nullable = false)
   private int memberCount;
 
