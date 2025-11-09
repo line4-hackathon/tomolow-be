@@ -1,5 +1,7 @@
 package com.hackathon.tomolow.domain.group.entity;
 
+import java.math.BigDecimal;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -52,14 +54,18 @@ public class Group extends BaseTimeEntity {
 
   /** 초기 자본 (시드머니) */
   @Column(name = "seed_money", nullable = false)
-  private int seedMoney;
+  private BigDecimal seedMoney;
 
   /** 그룹 내 자산 (현재 평가금액, null 가능) */
   @Column(name = "total_money")
-  private Integer totalMoney;
+  private BigDecimal totalMoney;
+
+  /** 현재 활성화된 상태인지 (종료/인원부족 X) */
+  @Column(name = "is_active")
+  private Boolean isActive;
 
   /** 그룹 자산 갱신 */
-  public void updateTotalMoney(int totalMoney) {
+  public void updateTotalMoney(BigDecimal totalMoney) {
     this.totalMoney = totalMoney;
   }
 
