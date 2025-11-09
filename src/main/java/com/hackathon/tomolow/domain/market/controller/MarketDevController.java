@@ -30,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @Tag(name = "Market", description = "종목(Market) 관리 API (개발자용)")
-public class MarketController {
+public class MarketDevController {
 
   private final MarketService marketService;
 
