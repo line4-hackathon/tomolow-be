@@ -33,7 +33,7 @@ public class GroupEnterService {
 
     return GroupSearchResponseDto.builder()
         .groupName(group.getName())
-        .creatorName(creator.getName())
+        .creatorNickname(creator.getNickname())
         .memberCount(group.getMemberCount())
         .currentMemberCount((int) currentMemberCount)
         .seedMoney(group.getSeedMoney().setScale(0, RoundingMode.DOWN))

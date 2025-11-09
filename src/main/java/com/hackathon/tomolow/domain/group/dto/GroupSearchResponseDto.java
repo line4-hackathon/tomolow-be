@@ -11,7 +11,7 @@ public class GroupSearchResponseDto {
 
   private String groupName;
 
-  private String creatorName;
+  private String creatorNickname;
 
   private BigDecimal seedMoney;
 
