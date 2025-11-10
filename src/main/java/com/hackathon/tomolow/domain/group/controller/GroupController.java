@@ -8,7 +8,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import com.hackathon.tomolow.domain.group.dto.GroupCreateDto;
+import com.hackathon.tomolow.domain.group.dto.GroupCreateRequestDto;
+import com.hackathon.tomolow.domain.group.dto.GroupCreateResponseDto;
 import com.hackathon.tomolow.domain.group.dto.GroupSearchResponseDto;
 import com.hackathon.tomolow.domain.group.service.GroupEnterService;
 import com.hackathon.tomolow.domain.group.service.GroupService;
@@ -31,10 +32,11 @@ public class GroupController {
   @PostMapping
   public ResponseEntity<BaseResponse<?>> createGroup(
       @AuthenticationPrincipal CustomUserDetails customUserDetails,
-      @Valid @RequestBody GroupCreateDto groupCreateDto) {
+      @Valid @RequestBody GroupCreateRequestDto groupCreateRequestDto) {
     Long userId = customUserDetails.getUser().getId();
-    Long savedGroupId = groupService.createGroup(userId, groupCreateDto);
-    return ResponseEntity.ok(BaseResponse.success(savedGroupId));
+    GroupCreateResponseDto groupCreateResponseDto =
+        groupService.createGroup(userId, groupCreateRequestDto);
+    return ResponseEntity.ok(BaseResponse.success(groupCreateResponseDto));
   }
 
   @GetMapping("/join")
