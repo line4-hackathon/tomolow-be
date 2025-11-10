@@ -21,6 +21,7 @@ import com.hackathon.tomolow.domain.userMarketHolding.repository.UserMarketHoldi
 import com.hackathon.tomolow.global.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +35,7 @@ public class LimitTransactionService {
   private final PriceQueryService priceQueryService;
 
   /** 지정가 매수 */
+  @Transactional
   public String limitBuy(Long userId, Long marketId, OrderRequestDto orderRequestDto) {
     Market market =
         marketRepository
@@ -76,6 +78,7 @@ public class LimitTransactionService {
   }
 
   /** 지정가 매도 */
+  @Transactional
   public String limitSell(Long userId, Long marketId, OrderRequestDto orderRequestDto) {
     Market market =
         marketRepository
