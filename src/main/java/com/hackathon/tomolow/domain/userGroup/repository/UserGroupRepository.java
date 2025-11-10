@@ -2,6 +2,7 @@ package com.hackathon.tomolow.domain.userGroup.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -38,4 +39,6 @@ public interface UserGroupRepository extends JpaRepository<UserGroup, Long> {
     )
     """)
   List<Group> findJoinableGroupsExceptMine(Long userId);
+
+  Optional<List<UserGroup>> findByGroup_Id(Long groupId);
 }
