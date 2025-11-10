@@ -19,6 +19,9 @@ import lombok.NoArgsConstructor;
 @Schema(description = "실시간 랭킹 아이템")
 public class RankItem {
 
+  @Schema(description = "마켓 ID", example = "1")
+  private Long marketId;
+
   @Schema(description = "마켓 심볼", example = "KRW-BTC")
   private String symbol;
 

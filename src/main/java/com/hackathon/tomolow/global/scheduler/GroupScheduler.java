@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hackathon.tomolow.domain.group.entity.Group;
 import com.hackathon.tomolow.domain.group.repository.GroupRepository;
@@ -17,6 +18,7 @@ public class GroupScheduler {
 
   private final GroupRepository groupRepository;
 
+  @Transactional
   @Scheduled(fixedRate = 300000) // 5분마다
   public void checkExpiredGroups() {
     LocalDateTime now = LocalDateTime.now();
