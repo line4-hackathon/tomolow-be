@@ -35,8 +35,8 @@ public class UserGroupMarketHoldingService {
     for (UserGroupMarketHolding holding : userGroupMarketHoldings) {
       // 2-1. 해당 마켓의 평균 매수가 / 실시간 가격 조회
       BigDecimal avgPrice = holding.getAvgPrice();
-            BigDecimal lastTradePrice =
-                    priceQueryService.getLastTradePriceOrThrow(holding.getMarket().getSymbol());
+      BigDecimal lastTradePrice =
+          priceQueryService.getLastTradePriceOrThrow(holding.getMarket().getSymbol());
 
       // 2-2. 손익금 계산
       BigDecimal pnL =

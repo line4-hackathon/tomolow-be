@@ -1,7 +1,6 @@
 package com.hackathon.tomolow.domain.userGroupStockHolding.dto;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 
 import lombok.Builder;
