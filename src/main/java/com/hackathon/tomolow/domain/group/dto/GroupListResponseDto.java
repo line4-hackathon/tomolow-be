@@ -17,6 +17,8 @@ public class GroupListResponseDto {
   @Builder
   public static class GroupSummary {
 
+    private Long groupId;
+
     private String groupName;
 
     private Long dayUntilEnd;

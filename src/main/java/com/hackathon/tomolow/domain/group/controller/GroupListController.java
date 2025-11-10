@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hackathon.tomolow.domain.group.dto.GroupListResponseDto;
+import com.hackathon.tomolow.domain.group.dto.JoinableGroupListResponseDto;
 import com.hackathon.tomolow.domain.group.service.GroupListService;
 import com.hackathon.tomolow.global.response.BaseResponse;
 import com.hackathon.tomolow.global.security.CustomUserDetails;
@@ -30,5 +31,13 @@ public class GroupListController {
     Long userId = customUserDetails.getUser().getId();
     GroupListResponseDto activeGroupList = groupListService.getActiveAndExpiredGroupList(userId);
     return ResponseEntity.ok(BaseResponse.success(activeGroupList));
+  }
+
+  @GetMapping("/joinable")
+  public ResponseEntity<BaseResponse<?>> getJoinableGroupList(
+      @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+    Long userId = customUserDetails.getUser().getId();
+    JoinableGroupListResponseDto joinableGroupList = groupListService.getJoinableGroupList(userId);
+    return ResponseEntity.ok(BaseResponse.success(joinableGroupList));
   }
 }

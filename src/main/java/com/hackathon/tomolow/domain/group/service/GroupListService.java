@@ -8,6 +8,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.hackathon.tomolow.domain.group.dto.GroupListResponseDto;
+import com.hackathon.tomolow.domain.group.dto.JoinableGroupListResponseDto;
 import com.hackathon.tomolow.domain.group.entity.Group;
 import com.hackathon.tomolow.domain.user.entity.User;
 import com.hackathon.tomolow.domain.user.exception.UserErrorCode;
@@ -51,6 +52,7 @@ public class GroupListService {
               .ranking(1)
               .dayUntilEnd(dayUntilEnd)
               .hourUntilEnd(hourUntilEnd)
+              .groupId(group.getId())
               .build();
 
       activeGroupLists.add(groupSummary);
@@ -71,6 +73,7 @@ public class GroupListService {
               .ranking(1)
               .dayUntilEnd(null)
               .hourUntilEnd(null)
+              .groupId(group.getId())
               .build();
 
       expiredGroupList.add(groupSummary);
@@ -80,5 +83,49 @@ public class GroupListService {
         .activeList(activeGroupLists)
         .expiredList(expiredGroupList)
         .build();
+  }
+
+  public JoinableGroupListResponseDto getJoinableGroupList(Long userId) {
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+
+    // activatedAt이 null이면서 user가 속한 그룹 조회 (아직 활성화 전)
+    List<Group> groupsJoined =
+        userGroupRepository.findJoinableGroupsByUser(userId).stream()
+            .map(UserGroup::getGroup)
+            .toList();
+
+    List<JoinableGroupListResponseDto.JoinableGroupSummary> joinedGroupList =
+        getJoinableGroupSummaries(groupsJoined);
+
+    // activatedAt이 null이면서 user가 속하지 않은 그룹 조회 (아직 활성화 전)
+    List<Group> groupsNotJoined = userGroupRepository.findJoinableGroupsExceptMine(userId);
+
+    List<JoinableGroupListResponseDto.JoinableGroupSummary> notJoinedGroupList =
+        getJoinableGroupSummaries(groupsNotJoined);
+
+    return JoinableGroupListResponseDto.builder()
+        .joinedGroupList(joinedGroupList)
+        .notJoinedGroupList(notJoinedGroupList)
+        .build();
+  }
+
+  public List<JoinableGroupListResponseDto.JoinableGroupSummary> getJoinableGroupSummaries(
+      List<Group> groups) {
+    List<JoinableGroupListResponseDto.JoinableGroupSummary> groupSummaryList = new ArrayList<>();
+    for (Group group : groups) {
+      long currentMemberCount = userGroupRepository.countByGroup_Id(group.getId());
+      JoinableGroupListResponseDto.JoinableGroupSummary groupSummary =
+          JoinableGroupListResponseDto.JoinableGroupSummary.builder()
+              .groupName(group.getName())
+              .memberCount(group.getMemberCount())
+              .currentMemberCount((int) currentMemberCount)
+              .groupId(group.getId())
+              .build();
+      groupSummaryList.add(groupSummary);
+    }
+    return groupSummaryList;
   }
 }
