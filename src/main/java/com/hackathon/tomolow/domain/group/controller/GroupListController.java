@@ -25,10 +25,10 @@ public class GroupListController {
   private final GroupListService groupListService;
 
   @GetMapping
-  public ResponseEntity<BaseResponse<?>> getMyAcitveGroupList(
+  public ResponseEntity<BaseResponse<?>> getActiveAndExpiredGroupList(
       @AuthenticationPrincipal CustomUserDetails customUserDetails) {
     Long userId = customUserDetails.getUser().getId();
-    GroupListResponseDto activeGroupList = groupListService.getActiveGroupList(userId);
+    GroupListResponseDto activeGroupList = groupListService.getActiveAndExpiredGroupList(userId);
     return ResponseEntity.ok(BaseResponse.success(activeGroupList));
   }
 }

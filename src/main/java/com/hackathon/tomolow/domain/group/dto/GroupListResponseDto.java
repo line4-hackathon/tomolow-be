@@ -9,7 +9,9 @@ import lombok.Data;
 @Builder
 public class GroupListResponseDto {
 
-  private List<GroupSummary> summaryList;
+  private List<GroupSummary> activeList;
+
+  private List<GroupSummary> expiredList;
 
   @Data
   @Builder
