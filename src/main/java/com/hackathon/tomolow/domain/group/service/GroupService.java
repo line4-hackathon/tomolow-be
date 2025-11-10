@@ -6,7 +6,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.hackathon.tomolow.domain.group.dto.GroupCreateDto;
+import com.hackathon.tomolow.domain.group.dto.GroupCreateRequestDto;
+import com.hackathon.tomolow.domain.group.dto.GroupCreateResponseDto;
 import com.hackathon.tomolow.domain.group.entity.Group;
 import com.hackathon.tomolow.domain.group.exception.GroupErrorCode;
 import com.hackathon.tomolow.domain.group.repository.GroupRepository;
@@ -28,7 +29,8 @@ public class GroupService {
   private final UserGroupRepository userGroupRepository;
 
   @Transactional
-  public Long createGroup(Long userId, GroupCreateDto groupCreateDto) {
+  public GroupCreateResponseDto createGroup(
+      Long userId, GroupCreateRequestDto groupCreateRequestDto) {
 
     User user =
         userRepository
@@ -36,13 +38,13 @@ public class GroupService {
             .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 
     // 1. 유저 잔액 부족하지 않은지 체크
-    BigDecimal seedMoney = groupCreateDto.getSeedMoney();
+    BigDecimal seedMoney = groupCreateRequestDto.getSeedMoney();
     if (user.getCashBalance().compareTo(seedMoney) < 0)
       throw new CustomException(
           GroupErrorCode.GROUP_INSUFFICIENT_BALANCE, "잔액이 부족하여 그룹을 생성할 수 없습니다.");
 
     // 2. 동일 이름/코드의 그룹이 존재하지 않는지 확인
-    if (groupRepository.existsByName(groupCreateDto.getName()))
+    if (groupRepository.existsByName(groupCreateRequestDto.getName()))
       throw new CustomException(GroupErrorCode.GROUP_NAME_DUPLICATED);
 
     String groupCode = userId.hashCode() + UUID.randomUUID().toString();
@@ -53,10 +55,10 @@ public class GroupService {
     // 3. 그룹 생성
     Group group =
         Group.builder()
-            .name(groupCreateDto.getName())
-            .duration(groupCreateDto.getDuration())
+            .name(groupCreateRequestDto.getName())
+            .duration(groupCreateRequestDto.getDuration())
             .seedMoney(seedMoney)
-            .memberCount(groupCreateDto.getMemberCount())
+            .memberCount(groupCreateRequestDto.getMemberCount())
             .isActive(false)
             .code(groupCode)
             .totalMoney(seedMoney)
@@ -77,6 +79,11 @@ public class GroupService {
     userGroupRepository.save(userGroup);
     user.subtractCashBalance(group.getSeedMoney());
 
-    return savedGroup.getId();
+    // 5. 그룹 ID, 이름 코드 반환
+    return GroupCreateResponseDto.builder()
+        .groupName(savedGroup.getName())
+        .groupCode(savedGroup.getCode())
+        .groupId(savedGroup.getId())
+        .build();
   }
 }
