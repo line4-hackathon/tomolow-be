@@ -1,13 +1,11 @@
 package com.hackathon.tomolow.domain.group.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
+import jakarta.persistence.*;
+
+import com.hackathon.tomolow.domain.user.entity.User;
 import com.hackathon.tomolow.global.common.BaseTimeEntity;
 
 import lombok.AccessLevel;
@@ -42,7 +40,7 @@ public class Group extends BaseTimeEntity {
   @Column(name = "code", nullable = false, unique = true)
   private String code;
 
-  /** 현재 그룹 내 인원수 */
+  /** 그룹 내 기준 인원수 */
   @Column(name = "member_count", nullable = false)
   private int memberCount;
 
@@ -52,15 +50,36 @@ public class Group extends BaseTimeEntity {
 
   /** 초기 자본 (시드머니) */
   @Column(name = "seed_money", nullable = false)
-  private int seedMoney;
+  private BigDecimal seedMoney;
 
   /** 그룹 내 자산 (현재 평가금액, null 가능) */
   @Column(name = "total_money")
-  private Integer totalMoney;
+  private BigDecimal totalMoney;
+
+  /** 현재 활성화된 상태인지 (종료/인원부족 X) */
+  @Column(name = "is_active")
+  private Boolean isActive;
+
+  /** 그룹을 생성한 사용자 */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "creator_id")
+  private User creator;
+
+  /** 활성화된 시간 */
+  @Column(name = "actived_at")
+  private LocalDateTime activatedAt;
+
+  /** 종료 예정 시간 */
+  @Column(name = "end_at")
+  private LocalDateTime endAt;
 
   /** 그룹 자산 갱신 */
-  public void updateTotalMoney(int totalMoney) {
+  public void updateTotalMoney(BigDecimal totalMoney) {
     this.totalMoney = totalMoney;
+  }
+
+  public void addTotalMoney(BigDecimal money) {
+    this.totalMoney = this.totalMoney.add(money);
   }
 
   /** 그룹 인원 증가 */
@@ -73,5 +92,16 @@ public class Group extends BaseTimeEntity {
     if (this.memberCount > 0) {
       this.memberCount--;
     }
+  }
+
+  /** 그룹 활성화/비활성화 */
+  public void setGroupActive(Boolean isActive) {
+    this.isActive = isActive;
+  }
+
+  /** 그룹 활성화 시간 */
+  public void setGroupActivatedAtAndEndAt(LocalDateTime activatedAt) {
+    this.activatedAt = activatedAt;
+    this.endAt = activatedAt.plusDays(this.duration);
   }
 }
