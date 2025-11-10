@@ -100,6 +100,7 @@ public class RankingService {
       if (json == null) {
         Market m = marketMap.get(symbol);
         return RankItem.builder()
+            .marketId(m != null ? m.getId() : null)
             .symbol(symbol)
             .name(m != null ? m.getName() : symbol)
             .imageUrl(m != null ? m.getImgUrl() : null)
@@ -115,6 +116,7 @@ public class RankingService {
       }
 
       return RankItem.builder()
+          .marketId(m != null ? m.getId() : null)
           .symbol(symbol)
           .name(m != null ? m.getName() : symbol)
           .imageUrl(m != null ? m.getImgUrl() : null)
@@ -126,6 +128,7 @@ public class RankingService {
     } catch (Exception e) {
       Market m = marketMap.get(symbol);
       return RankItem.builder()
+          .marketId(m != null ? m.getId() : null)
           .symbol(symbol)
           .name(m != null ? m.getName() : symbol)
           .imageUrl(m != null ? m.getImgUrl() : null)
