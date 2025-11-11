@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import com.hackathon.tomolow.domain.userGroupTransaction.dto.GroupInfoResponseDto;
 import com.hackathon.tomolow.domain.userGroupTransaction.service.GroupOrderInfoService;
-import com.hackathon.tomolow.domain.userGroupTransaction.service.MarketGroupOrderService;
 import com.hackathon.tomolow.global.response.BaseResponse;
 import com.hackathon.tomolow.global.security.CustomUserDetails;
 
@@ -26,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 @Tag(name = "Group Buy/Sell", description = "그룹 매수/매도 관련 API")
 public class GroupOrderController {
 
-  private final MarketGroupOrderService marketGroupOrderService;
+  //  private final MarketGroupOrderService marketGroupOrderService;
   private final GroupOrderInfoService groupOrderInfoService;
 
   //  @PostMapping("/{groupId}/buy/market/{marketId}")
