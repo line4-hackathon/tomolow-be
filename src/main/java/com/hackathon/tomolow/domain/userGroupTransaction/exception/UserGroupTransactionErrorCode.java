@@ -19,7 +19,8 @@ public enum UserGroupTransactionErrorCode implements BaseErrorCode {
       "GROUP_TX_4003", "유효하지 않은 거래 타입입니다. (BUY 또는 SELL이어야 합니다.)", HttpStatus.BAD_REQUEST),
   TRANSACTION_NOT_FOUND("GROUP_TX_4004", "해당 거래 내역을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
   USERGROUP_NOT_FOUND("GROUP_TX_4005", "그룹 내 사용자 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-  STOCK_NOT_FOUND("GROUP_TX_4006", "해당 주식 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
+  STOCK_NOT_FOUND("GROUP_TX_4006", "해당 주식 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+  GROUP_INACTIVE("GROUP_TX_4007", "그룹이 모집 중이거나 종료된 상태입니다.", HttpStatus.BAD_REQUEST);
 
   private final String code; // 에러 코드 문자열
   private final String message; // 에러 메시지
