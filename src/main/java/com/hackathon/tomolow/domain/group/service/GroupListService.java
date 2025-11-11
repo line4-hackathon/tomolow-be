@@ -15,6 +15,7 @@ import com.hackathon.tomolow.domain.user.exception.UserErrorCode;
 import com.hackathon.tomolow.domain.user.repository.UserRepository;
 import com.hackathon.tomolow.domain.userGroup.entity.UserGroup;
 import com.hackathon.tomolow.domain.userGroup.repository.UserGroupRepository;
+import com.hackathon.tomolow.domain.userGroup.service.UserGroupRankingService;
 import com.hackathon.tomolow.global.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class GroupListService {
 
   private final UserRepository userRepository;
   private final UserGroupRepository userGroupRepository;
+  private final UserGroupRankingService userGroupRankingService;
 
   public GroupListResponseDto getActiveAndExpiredGroupList(Long userId) {
     User user =
@@ -42,14 +44,13 @@ public class GroupListService {
     for (Group group : activeGroups) {
       // 종료까지 남은 시간 계산
       Duration timeUntilEnd = Duration.between(LocalDateTime.now(), group.getEndAt());
-      // TODO : 랭킹 구현 시 업데이트 필요
       Long dayUntilEnd = timeUntilEnd.toDays();
       Long hourUntilEnd = timeUntilEnd.toHours() % 24;
 
       GroupListResponseDto.GroupSummary groupSummary =
           GroupListResponseDto.GroupSummary.builder()
               .groupName(group.getName())
-              .ranking(1)
+              .ranking(userGroupRankingService.getMyRanking(userId, group.getId()))
               .dayUntilEnd(dayUntilEnd)
               .hourUntilEnd(hourUntilEnd)
               .groupId(group.getId())
@@ -66,11 +67,10 @@ public class GroupListService {
 
     List<GroupListResponseDto.GroupSummary> expiredGroupList = new ArrayList<>();
     for (Group group : expiredGroups) {
-      // TODO : 랭킹 구현 시 업데이트 필요
       GroupListResponseDto.GroupSummary groupSummary =
           GroupListResponseDto.GroupSummary.builder()
               .groupName(group.getName())
-              .ranking(1)
+              .ranking(userGroupRankingService.getMyRanking(userId, group.getId()))
               .dayUntilEnd(null)
               .hourUntilEnd(null)
               .groupId(group.getId())
