@@ -44,7 +44,7 @@ public class UserGroupMarketHolding extends BaseTimeEntity {
 
   /** 보유 수량 */
   @Column(name = "quantity", nullable = false)
-  private int quantity;
+  private Long quantity;
 
   /** 평균 구매 단가 */
   @Column(name = "avg_price", nullable = false, precision = 19, scale = 2)
