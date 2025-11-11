@@ -1,6 +1,7 @@
 package com.hackathon.tomolow.domain.userGroupTransaction.service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import org.springframework.stereotype.Service;
 
@@ -45,7 +46,10 @@ public class GroupOrderInfoService {
     UserGroup userGroup = getUserGroup(userId, groupId);
 
     // 가장 최신 시장가 조회
-    BigDecimal marketPrice = priceQueryService.getLastTradePriceOrThrow(market.getSymbol());
+    BigDecimal marketPrice =
+        priceQueryService
+            .getLastTradePriceOrThrow(market.getSymbol())
+            .setScale(0, RoundingMode.DOWN);
 
     // 최대 매수 가능 수량
     BigDecimal cashBalance = userGroup.getCashBalance();
@@ -85,7 +89,10 @@ public class GroupOrderInfoService {
             .orElseThrow(() -> new CustomException(MarketErrorCode.MARKET_NOT_FOUND));
     UserGroup userGroup = getUserGroup(userId, groupId);
 
-    BigDecimal marketPrice = priceQueryService.getLastTradePriceOrThrow(market.getSymbol());
+    BigDecimal marketPrice =
+        priceQueryService
+            .getLastTradePriceOrThrow(market.getSymbol())
+            .setScale(0, RoundingMode.DOWN);
 
     UserGroupMarketHolding userGroupMarketHolding =
         userGroupMarketHoldingRepository
@@ -107,7 +114,7 @@ public class GroupOrderInfoService {
   }
 
   /** id에 해당하는 그룹, 유저 있는지 체크 -> UserGroup 반환 */
-  private UserGroup getUserGroup(Long userId, Long groupId) {
+  public UserGroup getUserGroup(Long userId, Long groupId) {
     User user =
         userRepository
             .findById(userId)
