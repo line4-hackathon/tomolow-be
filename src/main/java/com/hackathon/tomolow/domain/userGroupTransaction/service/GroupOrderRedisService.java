@@ -32,14 +32,13 @@ public class GroupOrderRedisService {
   }
 
   // 유저 + 그룹별 대기 주문 목록(주문ID Set) 조회용 key
-  private String userOpenOrdersKey(String userId, String groupId) {
+  private String userGroupOpenOrdersKey(String userId, String groupId) {
     return "group:" + groupId + ":user:openOrders:" + userId;
   }
 
-  // TODO : 수정
   // 주문이 남아있는 marketId들을 보관하는 세트의 키 이름
   private String pendingSetKey() {
-    return "order:pending:markets";
+    return "group:order:pending:markets";
   }
 
   /** 주문 저장 */
@@ -76,9 +75,8 @@ public class GroupOrderRedisService {
     redisTemplate.opsForHash().put(groupDetailKey(orderId, groupId), "tradeType", tradeType.name());
 
     // 유저별 대기주문 Set에 등록
-    redisTemplate.opsForSet().add(userOpenOrdersKey(userId, groupId), orderId);
+    redisTemplate.opsForSet().add(userGroupOpenOrdersKey(userId, groupId), orderId);
 
-    // TODO : 수정
     // 마켓별 대기주문 세트에 마켓 등록
     redisTemplate.opsForSet().add(pendingSetKey(), marketId);
   }
@@ -145,7 +143,7 @@ public class GroupOrderRedisService {
 
     if (userId != null) {
       // UserGroup별 대기주문 세트에서 삭제
-      redisTemplate.opsForSet().remove(userOpenOrdersKey(userId, groupId), orderId);
+      redisTemplate.opsForSet().remove(userGroupOpenOrdersKey(userId, groupId), orderId);
     }
 
     // 해당 마켓의 BUY/SELL ZSET이 모두 비었으면 마켓별 대기주문 세트에서 제거
@@ -188,9 +186,21 @@ public class GroupOrderRedisService {
     return (result != null) ? result.stream().toList() : List.of();
   }
 
+  /** marketId를 기준으로 열린 groupId 조회 */
+  public Set<String> getGroupsWithOpenOrders(String marketId) {
+    // group:*:order:book:*:marketId 에 해당하는 키들을 전부 가져오기
+    Set<String> keys = redisTemplate.keys("group:*:order:book:*:" + marketId);
+
+    if (keys == null || keys.isEmpty()) {
+      return Set.of();
+    }
+
+    return keys.stream().map(key -> key.split(":")[1]).collect(java.util.stream.Collectors.toSet());
+  }
+
   /** UserGroup별 미체결 주문 목록(주문ID) 조회 */
-  public Set<String> listUserOpenOrderIds(String userId, String groupId) {
-    Set<String> s = redisTemplate.opsForSet().members(userOpenOrdersKey(userId, groupId));
+  public Set<String> listUserGroupOpenOrderIds(String userId, String groupId) {
+    Set<String> s = redisTemplate.opsForSet().members(userGroupOpenOrdersKey(userId, groupId));
     return (s == null) ? Set.of() : s;
   }
 

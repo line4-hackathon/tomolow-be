@@ -66,7 +66,6 @@ public class UserGroupOrderMatchService {
     }
   }
 
-
   private void executeBuy(
       String marketId, String groupId, String orderId, BigDecimal tradePrice, int quantity) {
 
@@ -126,7 +125,6 @@ public class UserGroupOrderMatchService {
 
     log.info("그룹 매수 체결 - orderId : " + orderId);
   }
-
 
   private void executeSell(
       String marketId, String groupId, String orderId, BigDecimal tradePrice, int quantity) {
