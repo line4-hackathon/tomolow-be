@@ -1,6 +1,6 @@
 package com.hackathon.tomolow.domain.userGroupTransaction.entity;
 
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,7 +13,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 
@@ -46,13 +45,13 @@ public class UserGroupTransaction extends BaseTimeEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  /** 거래 시각 */
-  @Column(name = "created_at", nullable = false)
-  private LocalDateTime createdAt;
-
   /** 거래 수량(주/코인 단위) */
   @Column(name = "quantity", nullable = false)
   private int quantity;
+
+  /** 거래 가격 */
+  @Column(name = "price", nullable = false)
+  private BigDecimal price;
 
   /** 매수/매도 구분 */
   @Enumerated(EnumType.STRING)
@@ -70,14 +69,6 @@ public class UserGroupTransaction extends BaseTimeEntity {
   private Market market;
 
   /* ===== 편의 메서드 ===== */
-
-  @PrePersist
-  private void fillCreatedAtIfNull() {
-    if (this.createdAt == null) {
-      this.createdAt = LocalDateTime.now();
-    }
-  }
-
   @Transient
   public boolean isBuy() {
     return tradeType == TradeType.BUY;

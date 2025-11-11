@@ -94,6 +94,7 @@ public class MarketTransactionService {
   }
 
   /** 시장가 매도 */
+  @Transactional
   public void marketSell(Long marketId, OrderRequestDto orderRequestDto) {
     Market market =
         marketRepository
