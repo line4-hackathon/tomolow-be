@@ -12,7 +12,7 @@ import lombok.Getter;
 public enum UserGroupTransactionErrorCode implements BaseErrorCode {
 
   // ===== 거래 관련 =====
-  INSUFFICIENT_BALANCE("GROUP_TX_4001", "현금 자산이 부족하여 거래를 수행할 수 없습니다.", HttpStatus.BAD_REQUEST),
+  INSUFFICIENT_BALANCE("GROUP_TX_4001", "잔액이 부족합니다.", HttpStatus.BAD_REQUEST),
   INSUFFICIENT_MARKET_QUANTITY(
       "GROUP_TX_4002", "보유 종목 수량보다 많은 양을 매도할 수 없습니다.", HttpStatus.BAD_REQUEST),
   INVALID_TRADE_TYPE(
