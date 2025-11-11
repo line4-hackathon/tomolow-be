@@ -2,7 +2,6 @@ package com.hackathon.tomolow.domain.userGroupTransaction.controller;
 
 import java.math.BigDecimal;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
 import org.springframework.http.ResponseEntity;
@@ -10,7 +9,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import com.hackathon.tomolow.domain.transaction.dto.OrderRequestDto;
 import com.hackathon.tomolow.domain.userGroupTransaction.dto.GroupInfoResponseDto;
 import com.hackathon.tomolow.domain.userGroupTransaction.service.GroupOrderInfoService;
 import com.hackathon.tomolow.domain.userGroupTransaction.service.MarketGroupOrderService;
@@ -31,43 +29,43 @@ public class GroupOrderController {
   private final MarketGroupOrderService marketGroupOrderService;
   private final GroupOrderInfoService groupOrderInfoService;
 
-//  @PostMapping("/{groupId}/buy/market/{marketId}")
-//  @Operation(summary = "그룹 시장가 매수", description = "그룹 시장가 매수를 위한 API")
-//  public ResponseEntity<BaseResponse<?>> groupMarketBuyOrder(
-//      @PathVariable Long marketId,
-//      @PathVariable Long groupId,
-//      @Valid @RequestBody OrderRequestDto orderRequestDto,
-//      @AuthenticationPrincipal CustomUserDetails userDetails) {
-//    Long userId = userDetails.getUser().getId();
-//    marketGroupOrderService.marketBuy(userId, marketId, groupId, orderRequestDto);
-//    return ResponseEntity.ok(BaseResponse.success(null));
-//  }
-//
-//  @PostMapping("/{groupId}/sell/market/{marketId}")
-//  @Operation(summary = "그룹 시장가 매도", description = "그룹 시장가 매도를 위한 API")
-//  public ResponseEntity<BaseResponse<?>> groupLimitBuyOrder(
-//      @PathVariable Long marketId,
-//      @PathVariable Long groupId,
-//      @Valid @RequestBody OrderRequestDto orderRequestDto,
-//      @AuthenticationPrincipal CustomUserDetails userDetails) {
-//    Long userId = userDetails.getUser().getId();
-//    marketGroupOrderService.marketSell(userId, marketId, groupId, orderRequestDto);
-//    return ResponseEntity.ok(BaseResponse.success(null));
-//  }
-//
-//  @GetMapping("/{groupId}/buy/market/{marketId}")
-//  @Operation(
-//      summary = "그룹 시장가 거래 - 시장가 / 최대 매수 수량 / 보유 현금 조회",
-//      description = "시장가 거래 - 시장가 / 최대 매수 수량 / 보유 현금 조회를 위한 API")
-//  public ResponseEntity<BaseResponse<?>> getGroupMarketBuyInfo(
-//      @PathVariable Long marketId,
-//      @PathVariable Long groupId,
-//      @AuthenticationPrincipal CustomUserDetails customUserDetails) {
-//    Long userId = customUserDetails.getUser().getId();
-//    GroupInfoResponseDto groupMarketBuyInfo =
-//        groupOrderInfoService.getGroupMarketBuyInfo(userId, groupId, marketId);
-//    return ResponseEntity.ok(BaseResponse.success(groupMarketBuyInfo));
-//  }
+  //  @PostMapping("/{groupId}/buy/market/{marketId}")
+  //  @Operation(summary = "그룹 시장가 매수", description = "그룹 시장가 매수를 위한 API")
+  //  public ResponseEntity<BaseResponse<?>> groupMarketBuyOrder(
+  //      @PathVariable Long marketId,
+  //      @PathVariable Long groupId,
+  //      @Valid @RequestBody OrderRequestDto orderRequestDto,
+  //      @AuthenticationPrincipal CustomUserDetails userDetails) {
+  //    Long userId = userDetails.getUser().getId();
+  //    marketGroupOrderService.marketBuy(userId, marketId, groupId, orderRequestDto);
+  //    return ResponseEntity.ok(BaseResponse.success(null));
+  //  }
+  //
+  //  @PostMapping("/{groupId}/sell/market/{marketId}")
+  //  @Operation(summary = "그룹 시장가 매도", description = "그룹 시장가 매도를 위한 API")
+  //  public ResponseEntity<BaseResponse<?>> groupLimitBuyOrder(
+  //      @PathVariable Long marketId,
+  //      @PathVariable Long groupId,
+  //      @Valid @RequestBody OrderRequestDto orderRequestDto,
+  //      @AuthenticationPrincipal CustomUserDetails userDetails) {
+  //    Long userId = userDetails.getUser().getId();
+  //    marketGroupOrderService.marketSell(userId, marketId, groupId, orderRequestDto);
+  //    return ResponseEntity.ok(BaseResponse.success(null));
+  //  }
+  //
+  //  @GetMapping("/{groupId}/buy/market/{marketId}")
+  //  @Operation(
+  //      summary = "그룹 시장가 거래 - 시장가 / 최대 매수 수량 / 보유 현금 조회",
+  //      description = "시장가 거래 - 시장가 / 최대 매수 수량 / 보유 현금 조회를 위한 API")
+  //  public ResponseEntity<BaseResponse<?>> getGroupMarketBuyInfo(
+  //      @PathVariable Long marketId,
+  //      @PathVariable Long groupId,
+  //      @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+  //    Long userId = customUserDetails.getUser().getId();
+  //    GroupInfoResponseDto groupMarketBuyInfo =
+  //        groupOrderInfoService.getGroupMarketBuyInfo(userId, groupId, marketId);
+  //    return ResponseEntity.ok(BaseResponse.success(groupMarketBuyInfo));
+  //  }
 
   @GetMapping("/{groupId}/buy/limit/{marketId}")
   @Operation(
