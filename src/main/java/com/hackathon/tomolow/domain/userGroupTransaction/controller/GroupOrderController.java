@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import com.hackathon.tomolow.domain.transaction.dto.OrderRequestDto;
 import com.hackathon.tomolow.domain.userGroupTransaction.dto.GroupInfoResponseDto;
 import com.hackathon.tomolow.domain.userGroupTransaction.service.GroupOrderInfoService;
+import com.hackathon.tomolow.domain.userGroupTransaction.service.LimitGroupOrderService;
 import com.hackathon.tomolow.domain.userGroupTransaction.service.MarketGroupOrderService;
 import com.hackathon.tomolow.global.response.BaseResponse;
 import com.hackathon.tomolow.global.security.CustomUserDetails;
@@ -30,6 +31,7 @@ public class GroupOrderController {
 
   private final MarketGroupOrderService marketGroupOrderService;
   private final GroupOrderInfoService groupOrderInfoService;
+  private final LimitGroupOrderService limitGroupOrderService;
 
   @PostMapping("/{groupId}/buy/market/{marketId}")
   @Operation(summary = "그룹 시장가 매수", description = "그룹 시장가 매수를 위한 API")
@@ -53,6 +55,31 @@ public class GroupOrderController {
     Long userId = userDetails.getUser().getId();
     marketGroupOrderService.marketSell(userId, groupId, marketId, orderRequestDto);
     return ResponseEntity.ok(BaseResponse.success(null));
+  }
+
+  @PostMapping("/{groupId}/buy/limit/{marketId}")
+  @Operation(summary = "그룹 지정가 매수", description = "그룹 지정가 매수를 위한 API")
+  public ResponseEntity<BaseResponse<?>> groupLimitBuyOrder(
+      @PathVariable Long marketId,
+      @PathVariable Long groupId,
+      @Valid @RequestBody OrderRequestDto orderRequestDto,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    Long userId = userDetails.getUser().getId();
+    String buyOrderId = limitGroupOrderService.limitBuy(userId, groupId, marketId, orderRequestDto);
+    return ResponseEntity.ok(BaseResponse.success(buyOrderId));
+  }
+
+  @PostMapping("/{groupId}/sell/limit/{marketId}")
+  @Operation(summary = "그룹 지정가 매도", description = "그룹 지정가 매도를 위한 API")
+  public ResponseEntity<BaseResponse<?>> groupLimitSellOrder(
+      @PathVariable Long marketId,
+      @PathVariable Long groupId,
+      @Valid @RequestBody OrderRequestDto orderRequestDto,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    Long userId = userDetails.getUser().getId();
+    String sellOrderId =
+        limitGroupOrderService.limitSell(userId, groupId, marketId, orderRequestDto);
+    return ResponseEntity.ok(BaseResponse.success(sellOrderId));
   }
 
   @GetMapping("/{groupId}/buy/market/{marketId}")

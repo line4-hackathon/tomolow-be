@@ -65,12 +65,12 @@ public class User extends BaseTimeEntity {
   // 현금자산
   @Column(name = "cash_balance", nullable = false, precision = 19, scale = 2)
   @Builder.Default
-  private BigDecimal cashBalance = new BigDecimal("10000000").setScale(2, RoundingMode.HALF_UP);
+  private BigDecimal cashBalance = new BigDecimal("1000000000").setScale(2, RoundingMode.HALF_UP);
 
   // 기존자산
   @Column(name = "origin_balance", nullable = false, precision = 19, scale = 2)
   @Builder.Default
-  private BigDecimal originBalance = new BigDecimal("10000000").setScale(2, RoundingMode.HALF_UP);
+  private BigDecimal originBalance = new BigDecimal("1000000000").setScale(2, RoundingMode.HALF_UP);
 
   // 리프레시 토큰 값을 설정하는 메서드 (토큰 재발급 시 사용)
   public void createRefreshToken(String refreshToken) {
