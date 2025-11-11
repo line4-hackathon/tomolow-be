@@ -1,6 +1,7 @@
 package com.hackathon.tomolow.domain.transaction.service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import org.springframework.stereotype.Service;
 
@@ -38,7 +39,10 @@ public class TransactionInfoService {
             .findById(userId)
             .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
     // 가장 최신 시장가 조회
-    BigDecimal marketPrice = priceQueryService.getLastTradePriceOrThrow(market.getSymbol());
+    BigDecimal marketPrice =
+        priceQueryService
+            .getLastTradePriceOrThrow(market.getSymbol())
+            .setScale(0, RoundingMode.DOWN);
     BigDecimal cashBalance = user.getCashBalance();
     Long maxQuantity = cashBalance.divideToIntegralValue(marketPrice).longValue();
 
@@ -81,7 +85,10 @@ public class TransactionInfoService {
             .findById(userId)
             .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 
-    BigDecimal marketPrice = priceQueryService.getLastTradePriceOrThrow(market.getSymbol());
+    BigDecimal marketPrice =
+        priceQueryService
+            .getLastTradePriceOrThrow(market.getSymbol())
+            .setScale(0, RoundingMode.DOWN);
 
     UserMarketHolding userMarketHolding =
         userMarketHoldingRepository.findByUserAndMarket(user, market).orElse(null);
