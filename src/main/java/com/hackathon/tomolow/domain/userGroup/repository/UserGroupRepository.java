@@ -41,4 +41,6 @@ public interface UserGroupRepository extends JpaRepository<UserGroup, Long> {
   List<Group> findJoinableGroupsExceptMine(Long userId);
 
   Optional<List<UserGroup>> findByGroup_Id(Long groupId);
+
+  Optional<UserGroup> findByUser_IdAndGroup_Id(Long userId, Long groupId);
 }

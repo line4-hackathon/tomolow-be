@@ -10,4 +10,6 @@ import com.hackathon.tomolow.domain.userGroupStockHolding.entity.UserGroupMarket
 public interface UserGroupMarketHoldingRepository
     extends JpaRepository<UserGroupMarketHolding, Long> {
   Optional<List<UserGroupMarketHolding>> findByUserGroup_Id(Long id);
+
+  Optional<UserGroupMarketHolding> findByUserGroup_IdAndMarket_Id(Long userGroupId, Long marketId);
 }
