@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hackathon.tomolow.domain.market.dto.response.NewsResponseDto;
@@ -29,5 +30,11 @@ public class MarketController {
   public ResponseEntity<BaseResponse<?>> getRecentNews(@PathVariable Long marketId) {
     List<NewsResponseDto> recentNews = marketService.getRecentNews(marketId);
     return ResponseEntity.ok(BaseResponse.success(recentNews));
+  }
+
+  @Operation(summary = "종목 검색", description = "이름 또는 심볼에 검색어가 포함된 종목을 조회합니다.")
+  @GetMapping("/search")
+  public ResponseEntity<?> search(@RequestParam("query") String query) {
+    return ResponseEntity.ok(BaseResponse.success("검색 결과", marketService.searchMarkets(query)));
   }
 }

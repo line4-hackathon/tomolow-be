@@ -18,4 +18,7 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
   List<Market> findAllByExchangeType(ExchangeType exchangeType);
 
   List<Market> findAllBySymbolIn(Iterable<String> symbols);
+
+  List<Market> findByNameContainingIgnoreCaseOrSymbolContainingIgnoreCase(
+      String name, String symbol);
 }
