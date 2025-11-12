@@ -4,15 +4,21 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import com.hackathon.tomolow.domain.chat.exception.ChatErrorCode;
+import com.hackathon.tomolow.domain.market.dto.response.MarketResponse;
 import com.hackathon.tomolow.domain.market.dto.response.NewsResponseDto;
 import com.hackathon.tomolow.domain.market.entity.Market;
 import com.hackathon.tomolow.domain.market.exception.MarketErrorCode;
+import com.hackathon.tomolow.domain.market.mapper.MarketMapper;
 import com.hackathon.tomolow.domain.market.repository.MarketRepository;
 import com.hackathon.tomolow.global.exception.CustomException;
 
@@ -26,6 +32,7 @@ public class MarketService {
   String GET_NEWS_API_URL;
 
   private final MarketRepository marketRepository;
+  private final MarketMapper marketMapper;
 
   public List<NewsResponseDto> getRecentNews(Long marketId) {
     Market market =
@@ -72,5 +79,17 @@ public class MarketService {
     }
 
     return newsList;
+  }
+
+  // 검색 관련 service
+  @Transactional(readOnly = true)
+  public List<MarketResponse> searchMarkets(String query) {
+    String q = query.trim();
+    if (q.isEmpty()) return List.of();
+    return marketRepository
+        .findByNameContainingIgnoreCaseOrSymbolContainingIgnoreCase(q, q)
+        .stream()
+        .map(MarketResponse::from)
+        .toList();
   }
 }
