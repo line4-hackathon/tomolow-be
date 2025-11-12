@@ -1,6 +1,7 @@
 package com.hackathon.tomolow.domain.userGroup.service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,28 +36,33 @@ public class UserGroupRankingService {
             .findById(groupId)
             .orElseThrow(() -> new CustomException(GroupErrorCode.GROUP_NOT_FOUND));
 
-    // 1. 모집 중인 그룹은 손익 계산 불가
+    // 1. 종료된 그룹은 DB에서 가져오기
+    if (!group.getIsActive() && group.getActivatedAt() != null) {
+      return getRankingAndPnLOfExpiredGroup(groupId);
+    }
+
+    // 2. 모집 중인 그룹은 손익 계산 불가
     if (group.getActivatedAt() == null) {
       throw new CustomException(
           UserGroupErrorCode.GROUP_NOT_ACTIVE_YET, "그룹이 아직 모집 중 상태라 랭킹을 계산할 수 없습니다.");
     }
 
-    // 2. 그룹에 가입 중인 사용자 가져오기
+    // 3. 그룹에 가입 중인 사용자 가져오기
     List<UserGroup> userGroups =
         userGroupRepository
             .findByGroup_Id(groupId)
             .orElseThrow(() -> new CustomException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
 
-    // 3. 그룹의 모든 사용자의 손익 계산
+    // 4. 그룹의 모든 사용자의 손익 계산
     List<UserGroupRankingDto.UserPnLDto> userPnLDtos = new ArrayList<>();
     for (UserGroup userGroup : userGroups) {
-      // 3-1. 사용자별 마켓별 손익 조회
+      // 4-1. 사용자별 마켓별 손익 조회
       UserGroupMarketHoldingPnLDto pnLByUserGroupAndMarket =
           userGroupMarketHoldingService.getPnLByUserGroupAndMarket(userGroup);
       List<UserGroupMarketHoldingPnLDto.SinglePnLDto> pnLDtos =
           pnLByUserGroupAndMarket.getPnLDtos();
 
-      // 3-2. 전체 손익금액 계산 = (남아있는 현금 자산 + 현재 투자 자산) - 시드머니
+      // 4-2. 전체 손익금액 계산 = (남아있는 현금 자산 + 현재 투자 자산) - 시드머니
       BigDecimal totalPrice = BigDecimal.ZERO;
       for (UserGroupMarketHoldingPnLDto.SinglePnLDto pnLDto : pnLDtos) {
         totalPrice = totalPrice.add(pnLDto.getPnL());
@@ -64,7 +70,7 @@ public class UserGroupRankingService {
       BigDecimal pnL =
           userGroup.getCashBalance().add(totalPrice).subtract(userGroup.getGroup().getSeedMoney());
 
-      // 3-3. UserPnLDto 생성
+      // 4-3. UserPnLDto 생성
       User user = userGroup.getUser();
       UserGroupRankingDto.UserPnLDto userPnLDto =
           UserGroupRankingDto.UserPnLDto.builder()
@@ -73,14 +79,14 @@ public class UserGroupRankingService {
               .pnL(pnL)
               .build();
 
-      // 3-4. UserGroupRankingDto에 추가
+      // 4-4. UserGroupRankingDto에 추가
       userPnLDtos.add(userPnLDto);
     }
 
-    // 4. userPnlDtos를 PnL 내림차순으로 정렬
+    // 5. userPnlDtos를 PnL 내림차순으로 정렬
     userPnLDtos.sort((a, b) -> b.getPnL().compareTo(a.getPnL()));
 
-    // 5. PnL 높은 순으로 랭킹과 함께 반환
+    // 6. PnL 높은 순으로 랭킹과 함께 반환
     List<UserGroupRankingDto> userGroupRankingDtos = new ArrayList<>();
     int rank = 1;
     for (UserGroupRankingDto.UserPnLDto pnLDto : userPnLDtos) {
@@ -88,6 +94,37 @@ public class UserGroupRankingService {
       rank++;
     }
 
+    return userGroupRankingDtos;
+  }
+
+  /** 종료된 그룹의 랭킹과 손익 가져오기 */
+  public List<UserGroupRankingDto> getRankingAndPnLOfExpiredGroup(Long groupId) {
+    List<UserGroup> userGroups =
+        userGroupRepository
+            .findByGroup_Id(groupId)
+            .orElseThrow(() -> new CustomException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
+    // 1. 그룹 내 가입한 사용자들의 PnL 불러오기
+    List<UserGroupRankingDto.UserPnLDto> userPnLDtoList = new ArrayList<>();
+    for (UserGroup userGroup : userGroups) {
+      BigDecimal finalPnl = userGroup.getFinalPnl().setScale(0, RoundingMode.DOWN);
+      User user = userGroup.getUser();
+      UserGroupRankingDto.UserPnLDto userPnLDto =
+          UserGroupRankingDto.UserPnLDto.builder()
+              .nickName(user.getNickname())
+              .pnL(finalPnl)
+              .userId(user.getId())
+              .build();
+      userPnLDtoList.add(userPnLDto);
+    }
+    // 2. 정렬
+    userPnLDtoList.sort((a, b) -> b.getPnL().compareTo(a.getPnL()));
+    // 3. PnL 높은 순으로 랭킹과 함께 반환
+    List<UserGroupRankingDto> userGroupRankingDtos = new ArrayList<>();
+    int rank = 1;
+    for (UserGroupRankingDto.UserPnLDto pnLDto : userPnLDtoList) {
+      userGroupRankingDtos.add(UserGroupRankingDto.builder().userPnl(pnLDto).ranking(rank).build());
+      rank++;
+    }
     return userGroupRankingDtos;
   }
 
