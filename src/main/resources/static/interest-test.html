@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>관심 종목 실시간 테스트</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script src="/js/sockjs.min.js"></script>
+  <script src="/js/stomp.umd.min.js"></script>
+  <style>
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, Pretendard, sans-serif;
+      background: #f7f8fa;
+      margin: 0;
+      padding: 32px;
+    }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .login-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    input, button {
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      padding: 0 10px;
+      font-size: 14px;
+    }
+
+    button {
+      background: #222;
+      color: white;
+      cursor: pointer;
+    }
+
+    #list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: white;
+      padding: 16px 20px;
+      border-radius: 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      transition: all 0.2s ease;
+    }
+
+    .left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .img {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: #1e2a3a;
+    }
+
+    .info .name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #111;
+    }
+
+    .info .symbol {
+      font-size: 13px;
+      color: #888;
+    }
+
+    .right {
+      text-align: right;
+    }
+
+    .price {
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .rate {
+      font-size: 14px;
+      margin-left: 6px;
+    }
+
+    .up { color: #d93025; }
+    .down { color: #0d904f; }
+
+    pre#log {
+      margin-top: 24px;
+      background: #111;
+      color: #cde2ff;
+      padding: 10px;
+      border-radius: 10px;
+      height: 120px;
+      overflow-y: auto;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+<h2>❤️ 관심 종목 실시간 테스트</h2>
+
+<div class="login-row">
+  <input id="inpToken" placeholder="Bearer 토큰(JWT)" style="flex:1;">
+  <button id="btnLoad">관심 목록 불러오기</button>
+</div>
+
+<div id="list"></div>
+
+<pre id="log"></pre>
+
+<script>
+  const API_BASE = location.origin; // e.g. http://localhost:8080 or https://api.tomolow.store
+  const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+  let stompClient = null;
+  let subs = {};
+
+  const el = (id) => document.getElementById(id);
+  const log = (m) => {
+    const box = el('log');
+    box.textContent += m + "\n";
+    box.scrollTop = box.scrollHeight;
+  };
+
+  const fmt = (n) => Number(n ?? 0).toLocaleString('ko-KR');
+  const pct = (n) => ((Number(n) >= 0 ? '+' : '') + (Number(n) * 100).toFixed(2) + '%');
+
+  async function loadInterests() {
+    const token = el('inpToken').value.trim();
+    if (!token) {
+      alert('JWT 토큰을 입력해주세요.');
+      return;
+    }
+
+    log('📡 요청: GET /api/interests/markets');
+    const res = await fetch(`${API_BASE}/api/interests/markets`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) {
+      alert('관심 목록 요청 실패: ' + res.status);
+      return;
+    }
+
+    const data = await res.json();
+    const items = data.data.items || [];
+    if (!items.length) {
+      log('⚠️ 관심 종목이 없습니다.');
+    } else {
+      log(`✅ ${items.length}개 관심 종목 불러옴`);
+    }
+    renderCards(items);
+    connectWebSocket(items);
+  }
+
+  function renderCards(items) {
+    const list = el('list');
+    list.innerHTML = '';
+    items.forEach(it => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.id = 'card-' + it.symbol;
+      card.innerHTML = `
+          <div class="left">
+            <div class="img" style="background-image:url(${it.imageUrl || ''}); background-size:cover;"></div>
+            <div class="info">
+              <div class="name">${it.name}</div>
+              <div class="symbol">${it.symbol}</div>
+            </div>
+          </div>
+          <div class="right">
+            <div class="price" id="price-${it.symbol}">${fmt(it.currentPrice)}</div>
+            <div class="rate ${it.changeRate >= 0 ? 'up' : 'down'}" id="rate-${it.symbol}">
+              ${pct(it.changeRate)}
+            </div>
+          </div>`;
+      list.appendChild(card);
+    });
+  }
+
+  function connectWebSocket(items) {
+    if (stompClient) stompClient.deactivate();
+
+    stompClient = new StompJs.Client({
+      brokerURL: WS_URL,
+      reconnectDelay: 2000,
+      debug: (msg) => log(msg),
+      onConnect: () => {
+        log('✅ STOMP 연결 성공');
+        subscribeTickers(items);
+      },
+      onStompError: (frame) => {
+        log('❌ STOMP ERROR: ' + frame.headers['message']);
+      },
+      onDisconnect: () => log('🔻 연결 종료됨'),
+    });
+
+    stompClient.activate();
+  }
+
+  function subscribeTickers(items) {
+    if (!stompClient?.active) return;
+    items.forEach(it => {
+      const topic = `/topic/ticker/${it.symbol}`;
+      if (subs[it.symbol]) return;
+      subs[it.symbol] = stompClient.subscribe(topic, msg => {
+        const t = JSON.parse(msg.body);
+        const priceEl = el('price-' + it.symbol);
+        const rateEl = el('rate-' + it.symbol);
+        if (priceEl) priceEl.textContent = fmt(t.tradePrice);
+        if (rateEl) {
+          const rate = Number(t.changeRate);
+          rateEl.textContent = pct(rate);
+          rateEl.classList.remove('up', 'down');
+          rateEl.classList.add(rate >= 0 ? 'up' : 'down');
+        }
+      });
+      log('🧷 SUB ' + topic);
+    });
+  }
+
+  el('btnLoad').onclick = loadInterests;
+</script>
+</body>
+</html>

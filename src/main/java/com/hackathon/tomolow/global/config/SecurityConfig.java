@@ -66,6 +66,7 @@ public class SecurityConfig {
                         "/",
                         "/index.html",
                         "/test.html",
+                        "/interest-test.html",
                         "/holding-test.html",
                         "holding-ws-test.html",
                         "/favicon.ico")
