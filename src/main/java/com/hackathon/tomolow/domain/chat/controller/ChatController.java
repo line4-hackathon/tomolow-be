@@ -8,10 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import com.hackathon.tomolow.domain.chat.dto.ChatRedisSaveDto;
-import com.hackathon.tomolow.domain.chat.dto.ChatRequestDto;
-import com.hackathon.tomolow.domain.chat.dto.ChatResponseDto;
-import com.hackathon.tomolow.domain.chat.dto.ChatSaveRequestDto;
+import com.hackathon.tomolow.domain.chat.dto.*;
 import com.hackathon.tomolow.domain.chat.service.ChatResponseService;
 import com.hackathon.tomolow.domain.chat.service.ChatSaveService;
 import com.hackathon.tomolow.domain.chat.service.ChatService;
@@ -50,7 +47,7 @@ public class ChatController {
   public ResponseEntity<BaseResponse<?>> getRoom(
       @AuthenticationPrincipal CustomUserDetails customUserDetails) {
     Long userId = customUserDetails.getUser().getId();
-    List<ChatRedisSaveDto> chatMessages = chatService.getChatMessages(userId);
+    ChatRoomResponseDto chatMessages = chatService.getChatMessages(userId);
     return ResponseEntity.ok(BaseResponse.success(chatMessages));
   }
 

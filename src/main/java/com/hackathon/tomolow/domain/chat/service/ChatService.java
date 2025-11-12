@@ -7,7 +7,11 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hackathon.tomolow.domain.chat.dto.ChatRedisSaveDto;
+import com.hackathon.tomolow.domain.chat.dto.ChatRoomResponseDto;
 import com.hackathon.tomolow.domain.chat.exception.ChatErrorCode;
+import com.hackathon.tomolow.domain.user.entity.User;
+import com.hackathon.tomolow.domain.user.exception.UserErrorCode;
+import com.hackathon.tomolow.domain.user.repository.UserRepository;
 import com.hackathon.tomolow.global.exception.CustomException;
 import com.hackathon.tomolow.global.redis.RedisUtil;
 
@@ -21,9 +25,14 @@ public class ChatService {
 
   private final RedisUtil redisUtil;
   private static final ObjectMapper objectMapper = new ObjectMapper();
+  private final UserRepository userRepository;
 
   /** 사용자 채팅방 내 채팅 조회하기 */
-  public List<ChatRedisSaveDto> getChatMessages(Long userId) {
+  public ChatRoomResponseDto getChatMessages(Long userId) {
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
     List<String> keys = redisUtil.getList("CHAT_KEYS:" + userId);
 
     List<ChatRedisSaveDto> messages = new ArrayList<>();
@@ -33,7 +42,7 @@ public class ChatService {
       messages.add(getChatQnA(key));
     }
 
-    return messages;
+    return ChatRoomResponseDto.builder().messages(messages).nickname(user.getNickname()).build();
   }
 
   /** Redis에서 조회한 json 데이터 역직렬화 */
