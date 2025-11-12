@@ -12,6 +12,7 @@ import com.hackathon.tomolow.domain.market.repository.MarketRepository;
 import com.hackathon.tomolow.domain.ticker.service.PriceQueryService;
 import com.hackathon.tomolow.domain.transaction.dto.PendingOrderModifyRequestDto;
 import com.hackathon.tomolow.domain.transaction.entity.TradeType;
+import com.hackathon.tomolow.domain.user.exception.UserErrorCode;
 import com.hackathon.tomolow.domain.user.repository.UserRepository;
 import com.hackathon.tomolow.domain.userGroup.entity.UserGroup;
 import com.hackathon.tomolow.domain.userGroupTransaction.dto.UserGroupPendingOrderDto;
@@ -151,5 +152,24 @@ public class UserGroupPendingOrderService {
     // 5. 매칭 시도
     BigDecimal marketPrice = priceQueryService.getLastTradePriceOrThrow(market.getSymbol());
     userGroupOrderMatchService.matchByMarketPrice(marketId, groupId.toString(), marketPrice);
+  }
+
+  public void deletePendingOrder(Long userId, Long groupId, String orderId) {
+    userRepository
+        .findById(userId)
+        .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+
+    String marketId = groupOrderRedisService.getOrderMarketId(orderId, groupId.toString());
+    if (marketId == null)
+      throw new CustomException(UserGroupTransactionErrorCode.PENDING_ORDER_NOT_EXIST);
+
+    marketRepository
+        .findById(Long.valueOf(marketId))
+        .orElseThrow(() -> new CustomException(MarketErrorCode.MARKET_NOT_FOUND));
+
+    TradeType tradeType = groupOrderRedisService.getTradeType(orderId, groupId.toString());
+    if (tradeType == null) throw new CustomException(UserGroupTransactionErrorCode.TRADE_TYPE_NULL);
+
+    groupOrderRedisService.removeOrder(marketId, tradeType, orderId, groupId.toString());
   }
 }

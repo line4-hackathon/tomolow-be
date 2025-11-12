@@ -21,7 +21,7 @@ public enum UserGroupTransactionErrorCode implements BaseErrorCode {
   USERGROUP_NOT_FOUND("GROUP_TX_4005", "그룹 내 사용자 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
   MARKET_NOT_FOUND("GROUP_TX_4006", "해당 마켓 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
   GROUP_INACTIVE("GROUP_TX_4007", "그룹이 모집 중이거나 종료된 상태입니다.", HttpStatus.BAD_REQUEST),
-  PENDING_ORDER_NOT_EXIST("GROUP_TX_4008", "해당 대기주문을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+  PENDING_ORDER_NOT_EXIST("GROUP_TX_4008", "해당 orderId의 대기주문이 존재하지 않습니다", HttpStatus.NOT_FOUND),
   TRADE_TYPE_NULL("GROUP_TX_4009", "trade type이 null입니다.", HttpStatus.NOT_FOUND);
 
   private final String code; // 에러 코드 문자열
