@@ -3,7 +3,9 @@ package com.hackathon.tomolow.domain.userGroup.service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
@@ -68,7 +70,11 @@ public class UserGroupRankingService {
         totalPrice = totalPrice.add(pnLDto.getPnL());
       }
       BigDecimal pnL =
-          userGroup.getCashBalance().add(totalPrice).subtract(userGroup.getGroup().getSeedMoney());
+          userGroup
+              .getCashBalance()
+              .add(totalPrice)
+              .subtract(userGroup.getGroup().getSeedMoney())
+              .setScale(0, RoundingMode.DOWN);
 
       // 4-3. UserPnLDto 생성
       User user = userGroup.getUser();
@@ -137,5 +143,25 @@ public class UserGroupRankingService {
       }
     }
     return 0;
+  }
+
+  public Map<String, BigDecimal> getMyRankingAndPnLInGroup(Long userId, Group group) {
+    List<UserGroupRankingDto> rankingAndPnLInGroup = getRankingAndPnLInGroup(group.getId());
+    Map<String, BigDecimal> result = new HashMap<>();
+    BigDecimal pnL = null;
+    BigDecimal pnLRate = null;
+    for (UserGroupRankingDto userRanking : rankingAndPnLInGroup) {
+      if (userRanking.getUserPnl().getUserId().equals(userId)) {
+        pnL = userRanking.getUserPnl().getPnL().setScale(0, RoundingMode.DOWN);
+        pnLRate =
+            pnL.divide(group.getSeedMoney(), 6, RoundingMode.HALF_UP)
+                .multiply(new BigDecimal(100))
+                .setScale(1, RoundingMode.HALF_UP);
+        ;
+      }
+    }
+    result.put("pnL", pnL);
+    result.put("pnLRate", pnLRate);
+    return result;
   }
 }
