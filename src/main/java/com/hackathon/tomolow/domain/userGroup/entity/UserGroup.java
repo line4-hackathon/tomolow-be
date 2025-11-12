@@ -94,4 +94,9 @@ public class UserGroup extends BaseTimeEntity {
   public void subtractInvestment(BigDecimal amount) {
     investmentBalance = investmentBalance.subtract(amount).setScale(2, RoundingMode.HALF_UP);
   }
+
+  /** 최종 손익 입력 */
+  public void setGroupFinalPnL(BigDecimal finalPnl) {
+    this.finalPnl = finalPnl;
+  }
 }
