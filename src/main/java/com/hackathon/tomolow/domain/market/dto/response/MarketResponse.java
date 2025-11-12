@@ -2,6 +2,7 @@ package com.hackathon.tomolow.domain.market.dto.response;
 
 import com.hackathon.tomolow.domain.market.entity.AssetType;
 import com.hackathon.tomolow.domain.market.entity.ExchangeType;
+import com.hackathon.tomolow.domain.market.entity.Market;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -33,4 +34,15 @@ public class MarketResponse {
 
   @Schema(description = "이미지 URL")
   private String imgUrl;
+
+  public static MarketResponse from(Market m) {
+    return MarketResponse.builder()
+        .id(m.getId())
+        .name(m.getName())
+        .symbol(m.getSymbol())
+        .assetType(m.getAssetType())
+        .exchangeType(m.getExchangeType())
+        .imgUrl(m.getImgUrl())
+        .build();
+  }
 }
