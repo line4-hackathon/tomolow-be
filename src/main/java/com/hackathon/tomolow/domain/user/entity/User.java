@@ -99,10 +99,24 @@ public class User extends BaseTimeEntity {
     this.investmentBalance = this.investmentBalance.add(amount);
   }
 
+  // 기존자산 증가
+  public void addOriginBalance(BigDecimal amount) {
+    this.originBalance = this.originBalance.add(amount);
+  }
+
+  // 기존자산 감소
+  public void subtractOriginBalance(BigDecimal amount) {
+    if (this.originBalance.compareTo(amount) < 0) {
+      throw new CustomException(TransactionErrorCode.INSUFFICIENT_BALANCE);
+    }
+    this.originBalance = this.originBalance.subtract(amount);
+  }
+
   // 투자자산 감소
   public void subtractInvestmentBalance(BigDecimal amount) {
     if (this.investmentBalance.compareTo(amount) < 0) {
-      this.investmentBalance = this.investmentBalance.subtract(amount);
+      // this.investmentBalance = this.investmentBalance.subtract(amount); -> 수정
+      throw new CustomException(TransactionErrorCode.INSUFFICIENT_BALANCE);
     }
     this.investmentBalance = this.investmentBalance.subtract(amount);
   }
