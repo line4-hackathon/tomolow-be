@@ -21,8 +21,8 @@ public class UserMarketHoldingController {
 
   private final HoldingQueryService holdingQueryService;
 
-  @GetMapping("/mypage/holdings/my")
-  @Operation(summary = "내 보유 종목 + 총 손익 조회(실시간 가격 반영)")
+  @GetMapping("/home/assets/my")
+  @Operation(summary = "홈화면 진입 시 현재 내 자산 조회 + 내 보유 종목 정보 + 총 손익 조회(실시간 가격 반영)")
   public ResponseEntity<BaseResponse<HoldingsResponse>> myHoldings(
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     var body = holdingQueryService.getMyHoldings(userDetails.getUser());

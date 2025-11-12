@@ -1,13 +1,17 @@
 package com.hackathon.tomolow.domain.userInterestedMarket.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hackathon.tomolow.domain.market.entity.Market;
 import com.hackathon.tomolow.domain.market.exception.MarketErrorCode;
 import com.hackathon.tomolow.domain.market.repository.MarketRepository;
+import com.hackathon.tomolow.domain.ticker.dto.TickerMessage;
+import com.hackathon.tomolow.domain.ticker.service.PriceQueryService;
 import com.hackathon.tomolow.domain.user.entity.User;
 import com.hackathon.tomolow.domain.user.exception.UserErrorCode;
 import com.hackathon.tomolow.domain.user.repository.UserRepository;
@@ -16,6 +20,7 @@ import com.hackathon.tomolow.domain.userInterestedMarket.dto.InterestedMarketCar
 import com.hackathon.tomolow.domain.userInterestedMarket.entity.UserInterestedMarket;
 import com.hackathon.tomolow.domain.userInterestedMarket.repository.UserInterestedMarketRepository;
 import com.hackathon.tomolow.global.exception.CustomException;
+import com.hackathon.tomolow.global.redis.RedisUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,6 +31,8 @@ public class UserInterestService {
   private final UserRepository userRepository;
   private final MarketRepository marketRepository;
   private final UserInterestedMarketRepository interestRepo;
+  private final PriceQueryService priceQueryService;
+  private final RedisUtil redisUtil;
 
   /** 하트 토글: 없으면 생성, 있으면 삭제 */
   @Transactional
@@ -56,13 +63,34 @@ public class UserInterestService {
   public List<InterestedMarketCard> list(Long userId) {
     return interestRepo.findAllByUser_IdOrderByCreatedAtDesc(userId).stream()
         .map(
-            im ->
-                InterestedMarketCard.builder()
-                    .marketId(im.getMarket().getId())
-                    .symbol(im.getMarket().getSymbol())
-                    .name(im.getMarket().getName())
-                    .imageUrl(im.getMarket().getImgUrl())
-                    .build())
+            im -> {
+              var market = im.getMarket();
+              BigDecimal currentPrice = BigDecimal.ZERO;
+              BigDecimal changeRate = BigDecimal.ZERO;
+
+              try {
+                // ✅ Redis에서 실시간 시세 조회
+                String json = redisUtil.getData("ticker:" + market.getSymbol());
+                if (json != null) {
+                  TickerMessage ticker = new ObjectMapper().readValue(json, TickerMessage.class);
+                  currentPrice = ticker.getTradePrice();
+                  changeRate = ticker.getChangeRate();
+                } else {
+                  // fallback: PriceQueryService 사용
+                  currentPrice = priceQueryService.getLastTradePriceOrThrow(market.getSymbol());
+                }
+              } catch (Exception ignored) {
+              }
+
+              return InterestedMarketCard.builder()
+                  .marketId(im.getMarket().getId())
+                  .symbol(im.getMarket().getSymbol())
+                  .name(im.getMarket().getName())
+                  .imageUrl(im.getMarket().getImgUrl())
+                  .currentPrice(currentPrice)
+                  .changeRate(changeRate)
+                  .build();
+            })
         .toList();
   }
 
