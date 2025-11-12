@@ -47,7 +47,7 @@ public class GroupService {
     if (groupRepository.existsByName(groupCreateRequestDto.getName()))
       throw new CustomException(GroupErrorCode.GROUP_NAME_DUPLICATED);
 
-    String groupCode = userId.hashCode() + UUID.randomUUID().toString();
+    String groupCode = userId + UUID.randomUUID().toString().substring(0, 8);
     if (groupRepository.existsByCode(groupCode))
       throw new CustomException(
           GroupErrorCode.GROUP_CODE_DUPLICATED, "이미 존재하는 그룹 코드입니다. 코드 재생성을 위해 다시 시도해주세요.");
