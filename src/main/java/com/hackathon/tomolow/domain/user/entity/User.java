@@ -115,7 +115,6 @@ public class User extends BaseTimeEntity {
   // 투자자산 감소
   public void subtractInvestmentBalance(BigDecimal amount) {
     if (this.investmentBalance.compareTo(amount) < 0) {
-      // this.investmentBalance = this.investmentBalance.subtract(amount); -> 수정
       throw new CustomException(TransactionErrorCode.INSUFFICIENT_BALANCE);
     }
     this.investmentBalance = this.investmentBalance.subtract(amount);
