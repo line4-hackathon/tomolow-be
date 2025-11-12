@@ -78,6 +78,7 @@ public class GroupService {
 
     userGroupRepository.save(userGroup);
     user.subtractCashBalance(group.getSeedMoney());
+    user.subtractOriginBalance(group.getSeedMoney());
 
     // 5. 그룹 ID, 이름 코드 반환
     return GroupCreateResponseDto.builder()
