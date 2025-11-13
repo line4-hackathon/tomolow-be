@@ -117,6 +117,8 @@ public class MarketAnalysisService {
                 .map(
                     s ->
                         MarketAnalysisSourceDto.builder()
+                            .title(s.getTitle())
+                            .sourceName(s.getSource_name())
                             .url(s.getUrl())
                             .imageUrl(s.getImage_url())
                             .build())
