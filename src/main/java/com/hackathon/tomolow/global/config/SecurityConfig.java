@@ -68,6 +68,7 @@ public class SecurityConfig {
                         "/test.html",
                         "/interest-test.html",
                         "/holding-test.html",
+                        "/ranking-test.html",
                         "holding-ws-test.html",
                         "/favicon.ico")
                     .permitAll()
