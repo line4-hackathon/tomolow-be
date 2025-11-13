@@ -52,4 +52,16 @@ public class MarketController {
         marketPendingOrderService.getMarketPendingOrders(userId, marketId);
     return ResponseEntity.ok(BaseResponse.success(marketPendingOrders));
   }
+
+  @GetMapping("/market/{marketId}/pending/group/{groupId}")
+  @Operation(summary = "그룹 내 마켓별 대기주문 조회", description = "트레이딩 페이지 내 그룹 내 마켓별 대기주문 조회를 위한 API")
+  public ResponseEntity<BaseResponse<?>> getMarketUserGroupPendingOrder(
+      @PathVariable Long marketId,
+      @PathVariable Long groupId,
+      @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+    Long userId = customUserDetails.getUser().getId();
+    List<MarketPendingOrderResponseDto> marketPendingOrders =
+        marketPendingOrderService.getMarketUserGroupPendingOrders(userId, groupId, marketId);
+    return ResponseEntity.ok(BaseResponse.success(marketPendingOrders));
+  }
 }
