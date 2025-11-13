@@ -67,7 +67,7 @@ public class UserGroupRankingService {
       // 4-2. 전체 손익금액 계산 = (남아있는 현금 자산 + 현재 투자 자산) - 시드머니
       BigDecimal totalPrice = BigDecimal.ZERO;
       for (UserGroupMarketHoldingPnLDto.SinglePnLDto pnLDto : pnLDtos) {
-        totalPrice = totalPrice.add(pnLDto.getPnL());
+        totalPrice = totalPrice.add(pnLDto.getTotalPrice());
       }
       BigDecimal pnL =
           userGroup

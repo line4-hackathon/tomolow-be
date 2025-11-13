@@ -15,12 +15,19 @@ public class UserGroupMarketHoldingPnLDto {
   @Data
   @Builder
   public static class SinglePnLDto {
+
     private Long marketId;
 
     private String marketName;
 
+    private String marketImgUrl;
+
     private BigDecimal pnL;
 
     private BigDecimal pnLRate;
+
+    private BigDecimal totalPrice;
+
+    private Long quantity;
   }
 }
