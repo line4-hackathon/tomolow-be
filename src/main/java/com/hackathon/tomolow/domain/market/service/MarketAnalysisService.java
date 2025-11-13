@@ -1,5 +1,13 @@
 package com.hackathon.tomolow.domain.market.service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.hackathon.tomolow.domain.chat.dto.ChatRequestDto;
 import com.hackathon.tomolow.domain.chat.dto.ChatResponseDto;
 import com.hackathon.tomolow.domain.chat.service.ChatResponseService;
@@ -10,13 +18,8 @@ import com.hackathon.tomolow.domain.market.entity.Market;
 import com.hackathon.tomolow.domain.market.exception.MarketErrorCode;
 import com.hackathon.tomolow.domain.market.repository.MarketRepository;
 import com.hackathon.tomolow.global.exception.CustomException;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.List;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
