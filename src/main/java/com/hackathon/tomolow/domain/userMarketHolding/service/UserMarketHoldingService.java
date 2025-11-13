@@ -71,6 +71,7 @@ public class UserMarketHoldingService {
               .price(price)
               .changeRate(pnlRate)
               .interested(isInterested)
+              .marketId(market.getId())
               .build();
 
       responseDtos.add(userMarketHoldingResponseDto);

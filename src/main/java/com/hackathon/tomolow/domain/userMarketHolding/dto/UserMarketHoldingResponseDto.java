@@ -17,6 +17,9 @@ public class UserMarketHoldingResponseDto {
   @Schema(description = "마켓 이름", example = "비트코인")
   private String name;
 
+  @Schema(description = "마켓 이름", example = "비트코인")
+  private Long marketId;
+
   @Schema(description = "마켓 이미지 URL")
   private String imageUrl;
 
