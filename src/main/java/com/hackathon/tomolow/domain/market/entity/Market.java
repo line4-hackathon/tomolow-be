@@ -47,6 +47,10 @@ public class Market extends BaseTimeEntity {
   private String imgUrl; // 주식 이미지 (nullable)
 
   // set methods
+  public void setSymbol(String symbol) {
+    this.symbol = symbol;
+  }
+
   public void setName(String name) {
     this.name = name;
   }

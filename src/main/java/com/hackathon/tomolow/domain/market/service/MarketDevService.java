@@ -57,10 +57,25 @@ public class MarketDevService {
 
   @Transactional
   public MarketResponse update(MarketUpdateRequest req) {
+    // 우선 symbol 기준으로 찾기
     Market market =
         marketRepository
             .findBySymbol(req.getSymbol())
-            .orElseThrow(() -> new CustomException(MarketErrorCode.MARKET_NOT_FOUND));
+            // 없으면 name 기준으로 한 번 더 찾기
+            .orElseGet(
+                () ->
+                    marketRepository
+                        .findByName(req.getSymbol())
+                        .orElseThrow(() -> new CustomException(MarketErrorCode.MARKET_NOT_FOUND)));
+
+    // 3️⃣ (선택) 심볼도 바꾸고 싶을 때
+    if (req.getNewSymbol() != null && !req.getNewSymbol().isBlank()) {
+      // 중복 심볼 체크
+      if (marketRepository.existsBySymbol(req.getNewSymbol())) {
+        throw new CustomException(MarketErrorCode.MARKET_ALREADY_EXISTS);
+      }
+      market.setSymbol(req.getNewSymbol());
+    }
 
     if (req.getNewName() != null) {
       market.setName(req.getNewName());

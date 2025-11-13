@@ -12,6 +12,8 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
 
   Optional<Market> findBySymbol(String symbol);
 
+  Optional<Market> findByName(String name);
+
   boolean existsBySymbol(String symbol);
 
   // 업비트에 등록된 마켓만 가져오기
