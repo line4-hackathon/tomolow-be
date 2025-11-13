@@ -1,6 +1,7 @@
 package com.hackathon.tomolow.domain.userGroupTransaction.service;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -254,5 +255,22 @@ public class GroupOrderRedisService {
 
     // 재생성
     redisTemplate.opsForZSet().add(key, orderId, priceDouble);
+  }
+
+  /** 그룹, 유저, 마켓에 해당하는 주문 조회 */
+  public Set<String> getOrdersByGroupAndMarketAndUser(
+      String userId, String groupId, String marketId) {
+    // 그룹 내 유저에 해당하는 모든 주문 가져오기
+    Set<String> userGroupOrders =
+        redisTemplate.opsForSet().members(userGroupOpenOrdersKey(userId, groupId));
+    if (userGroupOrders == null || userGroupOrders.isEmpty()) return Set.of();
+
+    // 마켓에 해당하는 주문만 필터링
+    Set<String> result = new HashSet<>();
+    for (String orderId : userGroupOrders) {
+      String orderMarketId = getOrderMarketId(orderId, groupId);
+      if (orderMarketId != null && orderMarketId.equals(marketId)) result.add(orderId);
+    }
+    return result;
   }
 }

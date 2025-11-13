@@ -1,6 +1,7 @@
 package com.hackathon.tomolow.domain.transaction.service;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -228,5 +229,21 @@ public class OrderRedisService {
 
     // 재생성
     redisTemplate.opsForZSet().add(key, orderId, priceDouble);
+  }
+
+  /** marketId와 userId로 조회 */
+  public Set<String> getOrdersByMarketAndUser(String userId, String marketId) {
+    // 유저의 모든 주문 조회
+    Set<String> userOrderIds = redisTemplate.opsForSet().members(userOpenOrdersKey(userId));
+    if (userOrderIds == null || userOrderIds.isEmpty()) return Set.of();
+    // 그 중 marketId가 일치하는 주문만 필터링
+    Set<String> result = new HashSet<>();
+    for (String orderId : userOrderIds) {
+      String orderMarketId = getOrderMarketId(orderId);
+      if (orderMarketId.equals(marketId)) {
+        result.add(orderId);
+      }
+    }
+    return result;
   }
 }
