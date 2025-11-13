@@ -2,9 +2,11 @@ package com.hackathon.tomolow.domain.chat.dto;
 
 import jakarta.validation.constraints.NotNull;
 
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder
 public class ChatRequestDto {
 
   @NotNull private String question;
