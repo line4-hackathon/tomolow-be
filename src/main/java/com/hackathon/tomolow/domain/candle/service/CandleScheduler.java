@@ -17,11 +17,11 @@ public class CandleScheduler {
   private final CandleIngestService ingest;
 
   // 매일 00:05 KST에 최근 5개만 동기화(업서트)
-  @Scheduled(cron = "0 55 3 * * *", zone = "Asia/Seoul")
+  @Scheduled(cron = "0 5 0 * * *", zone = "Asia/Seoul")
   public void syncDaily() throws Exception {
     for (Market m : marketRepo.findAll()) {
       if (m.getExchangeType() == ExchangeType.UPBIT) {
-        ingest.upsertDayCandles(m, 365 * 3);
+        ingest.upsertDayCandles(m, 5);
       }
     }
   }
