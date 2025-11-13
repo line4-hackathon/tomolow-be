@@ -65,7 +65,7 @@ public class UserInterestService {
         .map(
             im -> {
               var market = im.getMarket();
-              BigDecimal currentPrice = BigDecimal.ZERO;
+              BigDecimal price = BigDecimal.ZERO;
               BigDecimal changeRate = BigDecimal.ZERO;
 
               try {
@@ -73,11 +73,11 @@ public class UserInterestService {
                 String json = redisUtil.getData("ticker:" + market.getSymbol());
                 if (json != null) {
                   TickerMessage ticker = new ObjectMapper().readValue(json, TickerMessage.class);
-                  currentPrice = ticker.getTradePrice();
+                  price = ticker.getTradePrice();
                   changeRate = ticker.getChangeRate();
                 } else {
                   // fallback: PriceQueryService 사용
-                  currentPrice = priceQueryService.getLastTradePriceOrThrow(market.getSymbol());
+                  price = priceQueryService.getLastTradePriceOrThrow(market.getSymbol());
                 }
               } catch (Exception ignored) {
               }
@@ -87,7 +87,7 @@ public class UserInterestService {
                   .symbol(im.getMarket().getSymbol())
                   .name(im.getMarket().getName())
                   .imageUrl(im.getMarket().getImgUrl())
-                  .currentPrice(currentPrice)
+                  .price(price)
                   .changeRate(changeRate)
                   .build();
             })

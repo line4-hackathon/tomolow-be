@@ -28,7 +28,7 @@ public class InterestedMarketCard {
   private String imageUrl;
 
   @Schema(description = "현재가", example = "87000")
-  private BigDecimal currentPrice; // ✅ 추가
+  private BigDecimal price; // ✅ 추가
 
   @Schema(description = "등락률 (소수, 예: 0.105는 +10.5%)", example = "0.105")
   private BigDecimal changeRate; // ✅ 추가
