@@ -60,6 +60,7 @@ public class GroupScheduler {
               .ifPresent(
                   (user) -> {
                     user.addCashBalance(group.getSeedMoney());
+                    user.addOriginBalance(group.getSeedMoney());
                   });
         }
         return;
@@ -70,6 +71,8 @@ public class GroupScheduler {
           .ifPresent(
               (winner) -> {
                 winner.addCashBalance(
+                    group.getSeedMoney().multiply(BigDecimal.valueOf(group.getMemberCount())));
+                winner.addOriginBalance(
                     group.getSeedMoney().multiply(BigDecimal.valueOf(group.getMemberCount())));
               });
     }

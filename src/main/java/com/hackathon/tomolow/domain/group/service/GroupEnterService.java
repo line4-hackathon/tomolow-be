@@ -83,6 +83,7 @@ public class GroupEnterService {
     // 2-1. 그룹 총 자산 증가, 사용자 현금 자산 감소
     group.addTotalMoney(group.getSeedMoney());
     user.subtractCashBalance(group.getSeedMoney());
+    user.subtractOriginBalance(group.getSeedMoney());
 
     userGroupRepository.save(userGroup);
 
