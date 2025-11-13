@@ -12,6 +12,7 @@ import com.hackathon.tomolow.domain.candle.dto.UpbitDayCandle;
 import com.hackathon.tomolow.domain.candle.entity.Candle;
 import com.hackathon.tomolow.domain.candle.repository.CandleRepository;
 import com.hackathon.tomolow.domain.market.entity.Market;
+import com.hackathon.tomolow.domain.market.repository.MarketRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ public class CandleIngestService {
 
   private final UpbitRestClient upbit;
   private final CandleRepository candleRepo;
+  private final MarketRepository marketRepo;
 
   @Transactional
   public int upsertDayCandles(Market market, int count) throws Exception {
@@ -66,5 +68,15 @@ public class CandleIngestService {
     log.info(
         "Upsert 1D candles: {} saved={} (symbol={})", market.getName(), saved, market.getSymbol());
     return saved;
+  }
+
+  @Transactional
+  public int ingestSingleById(Long marketId, int count) throws Exception {
+    Market m =
+        marketRepo
+            .findById(marketId)
+            .orElseThrow(() -> new IllegalArgumentException("해당 시장 없음: id=" + marketId));
+
+    return upsertDayCandles(m, count);
   }
 }
