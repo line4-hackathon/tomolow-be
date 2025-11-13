@@ -6,12 +6,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hackathon.tomolow.domain.market.dto.request.MarketAnalysisRequestDto;
+import com.hackathon.tomolow.domain.market.dto.response.MarketAnalysisResponseDto;
 import com.hackathon.tomolow.domain.market.dto.response.MarketPendingOrderResponseDto;
 import com.hackathon.tomolow.domain.market.dto.response.NewsResponseDto;
+import com.hackathon.tomolow.domain.market.service.MarketAnalysisService;
 import com.hackathon.tomolow.domain.market.service.MarketPendingOrderService;
 import com.hackathon.tomolow.domain.market.service.MarketService;
 import com.hackathon.tomolow.global.response.BaseResponse;
@@ -29,12 +34,27 @@ public class MarketController {
 
   private final MarketService marketService;
   private final MarketPendingOrderService marketPendingOrderService;
+  private final MarketAnalysisService marketAnalysisService;
 
   @GetMapping("/market/{marketId}/news")
   @Operation(summary = "최신 뉴스 조회", description = "최신 뉴스 조회를 위한 API")
   public ResponseEntity<BaseResponse<?>> getRecentNews(@PathVariable Long marketId) {
     List<NewsResponseDto> recentNews = marketService.getRecentNews(marketId);
     return ResponseEntity.ok(BaseResponse.success(recentNews));
+  }
+
+  @PostMapping("/market/{marketId}/analysis")
+  @Operation(
+      summary = "마켓 AI 주가 분석",
+      description = "해당 종목의 최근 뉴스들을 기반으로 ①뉴스 요약 ②현재 상승/하락 요인 ③앞으로의 리스크/기회 를 분석합니다.")
+  public ResponseEntity<BaseResponse<MarketAnalysisResponseDto>> analyzeMarket(
+      @AuthenticationPrincipal CustomUserDetails customUserDetails,
+      @PathVariable Long marketId,
+      @RequestBody MarketAnalysisRequestDto requestDto) {
+    Long userId = customUserDetails.getUser().getId();
+    MarketAnalysisResponseDto result =
+        marketAnalysisService.analyzeMarket(userId, marketId, requestDto);
+    return ResponseEntity.ok(BaseResponse.success(result));
   }
 
   @Operation(summary = "종목 검색", description = "이름 또는 심볼에 검색어가 포함된 종목을 조회합니다.")
