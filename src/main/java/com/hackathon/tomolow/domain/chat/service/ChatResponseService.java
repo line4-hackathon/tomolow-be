@@ -41,8 +41,10 @@ public class ChatResponseService {
 
     // cryptonews api 이용 위해 글로벌 심볼로 변환
     String tickers = chatRequestDto.getTickers();
-    if (tickers.contains("-")) tickers = tickers.split("-")[1];
-    chatRequestDto.updateTickers(tickers);
+    if (tickers != null && tickers.contains("-")) {
+      tickers = tickers.split("-")[1];
+      chatRequestDto.updateTickers(tickers);
+    }
 
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
