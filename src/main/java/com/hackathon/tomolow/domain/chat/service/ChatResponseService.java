@@ -39,6 +39,11 @@ public class ChatResponseService {
     // GPT API에 응답 요청
     RestTemplate restTemplate = new RestTemplate();
 
+    // cryptonews api 이용 위해 글로벌 심볼로 변환
+    String tickers = chatRequestDto.getTickers();
+    if (tickers.contains("-")) tickers = tickers.split("-")[1];
+    chatRequestDto.updateTickers(tickers);
+
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     HttpEntity<ChatRequestDto> requestEntity = new HttpEntity<>(chatRequestDto, headers);

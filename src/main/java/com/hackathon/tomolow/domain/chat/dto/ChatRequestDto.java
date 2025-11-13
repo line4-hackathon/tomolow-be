@@ -16,4 +16,8 @@ public class ChatRequestDto {
   private String start_date;
 
   private String end_date;
+
+  public void updateTickers(String tickers) {
+    this.tickers = tickers;
+  }
 }
