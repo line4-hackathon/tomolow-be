@@ -33,4 +33,7 @@ public class MarketUpdateRequest {
 
   @Schema(description = "새 거래소(옵션)", example = "UPBIT")
   private ExchangeType newExchangeType;
+
+  @Schema(description = "새 심볼(옵션)", example = "KRW-0G")
+  private String newSymbol; // 필요할 때만 사용
 }
