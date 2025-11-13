@@ -1,19 +1,29 @@
 package com.hackathon.tomolow.domain.transaction.controller;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.hackathon.tomolow.domain.transaction.dto.InfoResponseDto;
 import com.hackathon.tomolow.domain.transaction.dto.OrderRequestDto;
+import com.hackathon.tomolow.domain.transaction.dto.TradeHistoryResponse;
 import com.hackathon.tomolow.domain.transaction.service.LimitTransactionService;
 import com.hackathon.tomolow.domain.transaction.service.MarketTransactionService;
+import com.hackathon.tomolow.domain.transaction.service.TradeHistoryService;
 import com.hackathon.tomolow.domain.transaction.service.TransactionInfoService;
 import com.hackathon.tomolow.global.response.BaseResponse;
 import com.hackathon.tomolow.global.security.CustomUserDetails;
@@ -32,6 +42,7 @@ public class TransactionController {
   private final LimitTransactionService limitTransactionService;
   private final MarketTransactionService marketTransactionService;
   private final TransactionInfoService transactionInfoService;
+  private final TradeHistoryService tradeHistoryService;
 
   @PostMapping("/buy/limit/{marketId}")
   @Operation(summary = "지정가 매수", description = "지정가 매수를 위한 API")
@@ -102,5 +113,28 @@ public class TransactionController {
     Long userId = customUserDetails.getUser().getId();
     InfoResponseDto sellInfo = transactionInfoService.getSellInfo(userId, marketId);
     return ResponseEntity.ok(BaseResponse.success(sellInfo));
+  }
+
+  @Operation(summary = "기간별 거래내역 조회", description = "시작일~종료일 동안의 매수/매도 내역과 기간 손익 요약을 조회합니다.")
+  @GetMapping("/transactions/history")
+  public ResponseEntity<BaseResponse<TradeHistoryResponse>> getTradeHistory(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+      @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+    TradeHistoryResponse resp =
+        tradeHistoryService.getHistory(userDetails.getUser(), startDate, endDate);
+
+    return ResponseEntity.ok(BaseResponse.success("거래내역 조회 성공", resp));
+  }
+
+  @Operation(summary = "기본 범위 거래내역 조회", description = "해당 유저의 첫 거래일 ~ 오늘 날짜까지의 거래내역과 손익을 조회합니다.")
+  @GetMapping("/transactions/history/default")
+  public ResponseEntity<BaseResponse<TradeHistoryResponse>> getDefaultTradeHistory(
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+    TradeHistoryResponse resp = tradeHistoryService.getDefaultHistory(userDetails.getUser());
+
+    return ResponseEntity.ok(BaseResponse.success("거래내역(기본 범위) 조회 성공", resp));
   }
 }
