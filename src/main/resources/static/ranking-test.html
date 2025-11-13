@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>랭킹 실시간 테스트</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <!-- 배포 서버에 올려둔 js 사용 (관심종목 예제와 동일) -->
+  <script src="/js/sockjs.min.js"></script>
+  <script src="/js/stomp.umd.min.js"></script>
+
+  <style>
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, Pretendard, sans-serif;
+      background: #f7f8fa;
+      margin: 0;
+      padding: 32px;
+    }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+      align-items: center;
+    }
+
+    select, input, button {
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      padding: 0 10px;
+      font-size: 14px;
+    }
+
+    button {
+      background: #222;
+      color: white;
+      cursor: pointer;
+      border: none;
+    }
+
+    #status {
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    th, td {
+      padding: 8px 10px;
+      font-size: 13px;
+      border-bottom: 1px solid #eee;
+      text-align: right;
+    }
+
+    th:nth-child(2),
+    th:nth-child(3),
+    td:nth-child(2),
+    td:nth-child(3) {
+      text-align: left;
+    }
+
+    th {
+      background: #fafafa;
+      font-weight: 600;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .up {
+      color: #d93025;
+    }
+    .down {
+      color: #0d904f;
+    }
+
+    pre#log {
+      margin-top: 16px;
+      background: #111;
+      color: #cde2ff;
+      padding: 10px;
+      border-radius: 10px;
+      height: 120px;
+      overflow-y: auto;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+<h2>📊 랭킹 실시간 테스트</h2>
+
+<div class="controls">
+  <span>랭킹 타입:</span>
+  <select id="rankType">
+    <option value="turnover">거래대금 (turnover)</option>
+    <option value="volume">거래량 (volume)</option>
+    <option value="gainers">급상승 (gainers)</option>
+    <option value="losers">급하락 (losers)</option>
+  </select>
+
+  <span>limit:</span>
+  <input id="limit" type="number" min="1" max="100" value="20" style="width:70px;">
+
+  <button id="btnStart">초기 조회 + 실시간 구독</button>
+  <button id="btnDisconnect" disabled>Disconnect</button>
+</div>
+
+<div id="status">상태: 연결 안 됨</div>
+
+<table>
+  <thead>
+  <tr>
+    <th>#</th>
+    <th>심볼</th>
+    <th>이름</th>
+    <th>현재가</th>
+    <th>등락률</th>
+    <th>등락금액</th>
+  </tr>
+  </thead>
+  <tbody id="tbody">
+  <!-- 데이터 렌더링 영역 -->
+  </tbody>
+</table>
+
+<pre id="log"></pre>
+
+<script>
+  // 백엔드 API / WS 주소 (로컬/배포 모두 자동 대응)
+  const API_BASE = location.origin; // 예: http://localhost:8080, https://api.tomolow.store
+  const WS_URL =
+      (location.protocol === 'https:' ? 'wss://' : 'ws://') +
+      location.host +
+      '/ws'; // 예: wss://tomolow.store/ws
+
+  let stompClient = null;
+  let currentSub = null;
+
+  const el = (id) => document.getElementById(id);
+  const log = (m) => {
+    const box = el('log');
+    box.textContent += m + '\n';
+    box.scrollTop = box.scrollHeight;
+  };
+
+  const fmt = (n) => Number(n ?? 0).toLocaleString('ko-KR');
+  const pct = (n) => {
+    const v = Number(n || 0);
+    const sign = v >= 0 ? '+' : '';
+    return sign + (v * 100).toFixed(2) + '%';
+  };
+
+  // 1) REST로 초기 랭킹 한번 받아오기
+  async function loadInitialRank(type, limit) {
+    const url = `${API_BASE}/api/rank/${type}?limit=${limit}`;
+    log('📡 GET ' + url);
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      log('❌ 랭킹 요청 실패: ' + res.status);
+      return [];
+    }
+    const body = await res.json();
+    // BaseResponse.success("msg", data) 형태라고 가정 → data 필드에 리스트
+    const items = body.data || [];
+    log(`✅ 초기 랭킹 ${items.length}건 수신`);
+    render(items, limit);
+    return items;
+  }
+
+  // 2) WebSocket + STOMP 연결
+  function connectStomp(type, limit) {
+    if (stompClient) {
+      // 기존 연결 정리
+      try {
+        if (currentSub) currentSub.unsubscribe();
+      } catch {}
+      stompClient.deactivate();
+    }
+
+    stompClient = new StompJs.Client({
+      brokerURL: WS_URL,
+      reconnectDelay: 2000,
+      debug: (msg) => log(msg),
+      onConnect: () => {
+        log('✅ STOMP 연결 성공: ' + WS_URL);
+        el('status').textContent = `상태: 연결 완료, /topic/rank/${type} 구독 중`;
+        el('btnDisconnect').disabled = false;
+        subscribeRank(type, limit);
+      },
+      onStompError: (frame) => {
+        log('❌ STOMP ERROR: ' + frame.headers['message']);
+      },
+      onDisconnect: () => {
+        log('🔻 연결 종료됨');
+        el('status').textContent = '상태: 연결 끊김';
+        el('btnDisconnect').disabled = true;
+      }
+    });
+
+    stompClient.activate();
+  }
+
+  // 3) 랭킹 토픽 구독 (/topic/rank/{type})
+  function subscribeRank(type, limit) {
+    if (!stompClient || !stompClient.active) return;
+
+    const topic = `/topic/rank/${type}`;
+
+    if (currentSub) {
+      currentSub.unsubscribe();
+    }
+
+    currentSub = stompClient.subscribe(topic, (msg) => {
+      try {
+        const list = JSON.parse(msg.body); // RankingService에서 JSON 문자열 보냄
+        log(`📥 PUSH ${topic} length=${list.length}`);
+        render(list, limit);
+      } catch (e) {
+        console.error(e);
+        log('❌ JSON 파싱 에러: ' + e.message);
+      }
+    });
+
+    log('🧷 SUB ' + topic);
+  }
+
+  // 4) 테이블 렌더링
+  function render(items, limit) {
+    const tbody = el('tbody');
+    tbody.innerHTML = '';
+
+    (items || []).slice(0, limit).forEach((it, idx) => {
+      const tr = document.createElement('tr');
+
+      const rankTd = document.createElement('td');
+      rankTd.textContent = idx + 1;
+
+      const symTd = document.createElement('td');
+      symTd.textContent = it.symbol ?? '-';
+
+      const nameTd = document.createElement('td');
+      nameTd.textContent = it.name ?? '-';
+
+      const priceTd = document.createElement('td');
+      const price = it.price ?? 0;
+      priceTd.textContent = fmt(price);
+
+      const rateTd = document.createElement('td');
+      const rate = it.changeRate ?? 0;
+      rateTd.textContent = pct(rate);
+      rateTd.className = rate > 0 ? 'up' : rate < 0 ? 'down' : '';
+
+      const chgTd = document.createElement('td');
+      const chg = it.changePrice ?? 0;
+      chgTd.textContent = fmt(chg);
+
+      tr.appendChild(rankTd);
+      tr.appendChild(symTd);
+      tr.appendChild(nameTd);
+      tr.appendChild(priceTd);
+      tr.appendChild(rateTd);
+      tr.appendChild(chgTd);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  // 5) 버튼 이벤트
+  el('btnStart').onclick = async () => {
+    const type = el('rankType').value;
+    const limit = Number(el('limit').value || 20);
+
+    el('status').textContent = '상태: 초기 랭킹 조회 중...';
+    await loadInitialRank(type, limit);
+    connectStomp(type, limit);
+  };
+
+  el('btnDisconnect').onclick = () => {
+    if (stompClient) {
+      try {
+        if (currentSub) currentSub.unsubscribe();
+      } catch {}
+      stompClient.deactivate();
+    }
+    el('status').textContent = '상태: 연결 안 됨';
+    el('btnDisconnect').disabled = true;
+  };
+
+  // 타입 바꾸면, 이미 연결되어 있으면 다시 구독
+  el('rankType').addEventListener('change', () => {
+    if (stompClient && stompClient.active) {
+      const type = el('rankType').value;
+      const limit = Number(el('limit').value || 20);
+      subscribeRank(type, limit);
+      el('status').textContent = `상태: 연결 완료, /topic/rank/${type} 구독 중`;
+    }
+  });
+</script>
+</body>
+</html>
