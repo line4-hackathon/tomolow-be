@@ -57,6 +57,7 @@ public class UserGroupMarketHoldingService {
                 .marketImgUrl(holding.getMarket().getImgUrl())
                 .totalPrice(BigDecimal.ZERO) // 마켓 총 보유 금액
                 .quantity(holding.getQuantity())
+                .marketSymbol(holding.getMarket().getSymbol())
                 .build();
         pnLDtos.add(singlePnLDto);
         log.error(
@@ -88,6 +89,7 @@ public class UserGroupMarketHoldingService {
                       .multiply(BigDecimal.valueOf(holding.getQuantity()))
                       .setScale(0, RoundingMode.DOWN)) // 마켓 총 보유 금액
               .quantity(holding.getQuantity())
+              .marketSymbol(holding.getMarket().getSymbol())
               .build();
       pnLDtos.add(singlePnLDto);
     }

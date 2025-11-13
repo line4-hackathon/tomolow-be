@@ -91,6 +91,7 @@ public class UserGroupPendingOrderService {
               .quantity(remaining)
               .tradeType(tradeType)
               .marketName(market.getName())
+              .marketSymbol(market.getSymbol())
               .marketId(marketId)
               .build();
       dtos.add(dto);
