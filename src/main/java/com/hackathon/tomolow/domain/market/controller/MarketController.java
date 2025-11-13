@@ -3,15 +3,19 @@ package com.hackathon.tomolow.domain.market.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hackathon.tomolow.domain.market.dto.response.MarketPendingOrderResponseDto;
 import com.hackathon.tomolow.domain.market.dto.response.NewsResponseDto;
+import com.hackathon.tomolow.domain.market.service.MarketPendingOrderService;
 import com.hackathon.tomolow.domain.market.service.MarketService;
 import com.hackathon.tomolow.global.response.BaseResponse;
+import com.hackathon.tomolow.global.security.CustomUserDetails;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 public class MarketController {
 
   private final MarketService marketService;
+  private final MarketPendingOrderService marketPendingOrderService;
 
   @GetMapping("/market/{marketId}/news")
   @Operation(summary = "최신 뉴스 조회", description = "최신 뉴스 조회를 위한 API")
@@ -36,5 +41,15 @@ public class MarketController {
   @GetMapping("/search")
   public ResponseEntity<?> search(@RequestParam("query") String query) {
     return ResponseEntity.ok(BaseResponse.success("검색 결과", marketService.searchMarkets(query)));
+  }
+
+  @GetMapping("/market/{marketId}/pending")
+  @Operation(summary = "마켓별 대기주문 조회", description = "트레이딩 페이지 내 마켓별 대기주문 조회를 위한 API")
+  public ResponseEntity<BaseResponse<?>> getMarketPendingOrder(
+      @PathVariable Long marketId, @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+    Long userId = customUserDetails.getUser().getId();
+    List<MarketPendingOrderResponseDto> marketPendingOrders =
+        marketPendingOrderService.getMarketPendingOrders(userId, marketId);
+    return ResponseEntity.ok(BaseResponse.success(marketPendingOrders));
   }
 }
