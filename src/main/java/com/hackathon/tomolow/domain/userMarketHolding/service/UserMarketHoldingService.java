@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hackathon.tomolow.domain.market.entity.Market;
 import com.hackathon.tomolow.domain.ticker.service.PriceQueryService;
@@ -76,5 +77,14 @@ public class UserMarketHoldingService {
     }
 
     return responseDtos;
+  }
+
+  @Transactional(readOnly = true)
+  public boolean hasHolding(Long userId, Long marketId) {
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+    return userMarketHoldingRepository.existsByUser_IdAndMarket_Id(userId, marketId);
   }
 }
