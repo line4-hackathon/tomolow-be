@@ -22,6 +22,8 @@ public class UserGroupMarketHoldingPnLDto {
 
     private String marketImgUrl;
 
+    private String marketSymbol;
+
     private BigDecimal pnL;
 
     private BigDecimal pnLRate;

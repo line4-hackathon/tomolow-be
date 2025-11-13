@@ -15,6 +15,8 @@ public class UserGroupPendingOrderDto {
 
   private String marketName;
 
+  private String marketSymbol;
+
   private int quantity;
 
   private TradeType tradeType;
