@@ -16,4 +16,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
   // 해당 유저의 "첫 거래" 하나만 (createdAt 오름차순)
   Optional<Transaction> findFirstByUserOrderByCreatedAtAsc(User user);
+
+  // 기간 내 거래를 "오래된 순"으로 가져오도록 변경
+  List<Transaction> findAllByUserAndCreatedAtBetweenOrderByCreatedAtAsc(
+      User user, LocalDateTime start, LocalDateTime end);
 }
