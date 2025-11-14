@@ -1,5 +1,7 @@
 # 📈 TomoLow
 ### 투자를 모의로, 리스크는 로우로!
+<img width="977" height="548" alt="image" src="https://github.com/user-attachments/assets/a6550742-ae04-4b2e-9bbe-14ab504a786c" />
+
 
 >**팀명** : 2025 멋쟁이사자처럼 4호선톤 16팀
 >
@@ -72,22 +74,10 @@ TomoLow는 학습과 투자가 분리된 기존 구조를 개선하여, 사용�
 <br><br>
 <h2>👨‍👩‍👧‍👦 Members</h2>
 
-### PM & DESIGN
-
-#### 👑 박성준
-
-
-### Backend
-| <img src="https://github.com/user-attachments/assets/b9e351ac-ccc0-483a-aaed-8e73332bab89" width="150" height="150"/> | <img src="https://github.com/user-attachments/assets/b9e351ac-ccc0-483a-aaed-8e73332bab89" width="150" height="150"/> |
-|:---------------------------------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------:|
-|                                                      BE Developer                                                       |                                                     BE Developer                                                      |
-|                                        [윤해민](https://github.com/hamtorygoals)                                         |                                          [이경은](https://github.com/ruddmslee)                                          |
-
-### Frontend
-| <img src="https://github.com/user-attachments/assets/b9e351ac-ccc0-483a-aaed-8e73332bab89" width="150" height="150"/> | <img src="https://github.com/user-attachments/assets/b9e351ac-ccc0-483a-aaed-8e73332bab89" width="150" height="150"/> | <img src="https://github.com/user-attachments/assets/b9e351ac-ccc0-483a-aaed-8e73332bab89" width="150" height="150"/> |
-|:---------------------------------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------:|
-|                                         FE Developer                                          |                                        FE Developer                                        |                                    FE Developer                                     |
-|                                           [박소연](https://github.com/ss0yaa)                                            |                                           [박수연](https://github.com/krlyeon)                                           |                                         [정목진](https://github.com/Jeongmokjin)                                         |
+|PM & Design|FE|FE|FE|BE|BE|
+|:--:|:--:|:--:|:--:|:--:|:--:|
+|<img width="81" height="83" alt="image" src="https://github.com/user-attachments/assets/7c39bd30-9063-478c-81de-58cd2b753baf" />|<img width="81" height="83" alt="image" src="https://github.com/user-attachments/assets/004e0bb5-cee5-4fd2-8c03-be792d5790db" />|<img width="81" height="83" alt="image" src="https://github.com/user-attachments/assets/86593479-2e06-4325-a744-1cc750860775" />|<img width="81" height="83" alt="image" src="https://github.com/user-attachments/assets/10745b85-3f50-4d7a-b6cd-823d071439eb" />|<img width="81" height="83" alt="image" src="https://github.com/user-attachments/assets/fe8ef16a-6c5c-4a19-b93c-5069c2016c41" />|<img width="81" height="83" alt="image" src="https://github.com/user-attachments/assets/df531200-6277-47e8-a2a7-8f4c2da0967b" />|
+|박성준|박소연|박수연|정목진|윤해민|이경은|
 
 
 <br><br>
