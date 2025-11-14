@@ -82,7 +82,7 @@ public class UserGroupDetailService {
     List<UserGroupRankingDto> rankingAndPnLInGroup =
         userGroupRankingService.getRankingAndPnLInGroup(groupId);
     Map<String, BigDecimal> pnLAndPnLRate =
-        userGroupRankingService.getMyRankingAndPnLInGroup(userId, group);
+        userGroupRankingService.getMyRankingAndPnLInGroup(userGroup);
 
     return UserGroupDetailResponseDto.builder()
         .groupName(group.getName())

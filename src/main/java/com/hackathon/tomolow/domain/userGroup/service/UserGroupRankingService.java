@@ -19,6 +19,9 @@ import com.hackathon.tomolow.domain.userGroup.exception.UserGroupErrorCode;
 import com.hackathon.tomolow.domain.userGroup.repository.UserGroupRepository;
 import com.hackathon.tomolow.domain.userGroupStockHolding.dto.UserGroupMarketHoldingPnLDto;
 import com.hackathon.tomolow.domain.userGroupStockHolding.service.UserGroupMarketHoldingService;
+import com.hackathon.tomolow.domain.userGroupTransaction.entity.UserGroupTransaction;
+import com.hackathon.tomolow.domain.userGroupTransaction.repository.UserGroupTransactionRepository;
+import com.hackathon.tomolow.domain.userGroupTransaction.service.GroupOrderInfoService;
 import com.hackathon.tomolow.global.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,8 @@ public class UserGroupRankingService {
   private final UserGroupRepository userGroupRepository;
   private final GroupRepository groupRepository;
   private final UserGroupMarketHoldingService userGroupMarketHoldingService;
+  private final GroupOrderInfoService groupOrderInfoService;
+  private final UserGroupTransactionRepository userGroupTransactionRepository;
 
   /** 그룹 내 랭킹과 손익금액 조회 */
   public List<UserGroupRankingDto> getRankingAndPnLInGroup(Long groupId) {
@@ -145,20 +150,47 @@ public class UserGroupRankingService {
     return 0;
   }
 
-  public Map<String, BigDecimal> getMyRankingAndPnLInGroup(Long userId, Group group) {
-    List<UserGroupRankingDto> rankingAndPnLInGroup = getRankingAndPnLInGroup(group.getId());
+  public Map<String, BigDecimal> getMyRankingAndPnLInGroup(UserGroup userGroup) {
+    List<UserGroupRankingDto> rankingAndPnLInGroup =
+        getRankingAndPnLInGroup(userGroup.getGroup().getId());
     Map<String, BigDecimal> result = new HashMap<>();
     BigDecimal pnL = null;
-    BigDecimal pnLRate = null;
+    BigDecimal pnLRate = BigDecimal.ZERO;
+
+    // PnL 조회
     for (UserGroupRankingDto userRanking : rankingAndPnLInGroup) {
-      if (userRanking.getUserPnl().getUserId().equals(userId)) {
+      if (userRanking.getUserPnl().getUserId().equals(userGroup.getUser().getId())) {
         pnL = userRanking.getUserPnl().getPnL().setScale(0, RoundingMode.DOWN);
-        pnLRate =
-            pnL.divide(group.getSeedMoney(), 6, RoundingMode.HALF_UP)
-                .multiply(new BigDecimal(100))
-                .setScale(1, RoundingMode.HALF_UP);
-        ;
       }
+    }
+
+    if (pnL == null) {
+      result.put("pnL", BigDecimal.ZERO);
+      result.put("pnLRate", BigDecimal.ZERO);
+      return result;
+    }
+
+    // 2. 유저의 전체 매수매도 트랜잭션 불러오기
+    List<UserGroupTransaction> allByUserGroupId =
+        userGroupTransactionRepository.findAllByUserGroup_Id(userGroup.getId());
+
+    BigDecimal totalBuy = BigDecimal.ZERO;
+    BigDecimal totalSell = BigDecimal.ZERO;
+
+    for (UserGroupTransaction tx : allByUserGroupId) {
+      BigDecimal amount = tx.getPrice().multiply(BigDecimal.valueOf(tx.getQuantity()));
+
+      if (tx.isBuy()) totalBuy = totalBuy.add(amount);
+      else totalSell = totalSell.add(amount);
+    }
+
+    if (totalBuy.compareTo(BigDecimal.ZERO) == 0) {
+      pnLRate = BigDecimal.ZERO;
+    } else {
+      pnLRate =
+          pnL.divide(totalBuy, 6, RoundingMode.HALF_UP)
+              .multiply(BigDecimal.valueOf(100))
+              .setScale(1, RoundingMode.HALF_UP);
     }
     result.put("pnL", pnL);
     result.put("pnLRate", pnLRate);
