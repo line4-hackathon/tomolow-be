@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hackathon.tomolow.domain.ticker.service.PriceQueryService;
 import com.hackathon.tomolow.domain.userGroup.entity.UserGroup;
@@ -27,19 +28,24 @@ public class UserGroupMarketHoldingService {
   private final GroupOrderInfoService groupOrderInfoService;
 
   /** 마켓별로 사용자의 PnL 계산 */
+  @Transactional
   public UserGroupMarketHoldingPnLDto getPnLByUserGroupAndMarket(UserGroup userGroup) {
 
     // 1. 사용자가 해당 그룹 내에서 소유하고 있는 마켓 조회
     List<UserGroupMarketHolding> userGroupMarketHoldings =
         userGroupMarketHoldingRepository.findByUserGroup_Id(userGroup.getId());
 
-    if (userGroupMarketHoldings.isEmpty()) {
+    if (userGroupMarketHoldings.isEmpty())
       return UserGroupMarketHoldingPnLDto.builder().pnLDtos(List.of()).build();
-    }
 
     // 2. 마켓별로 손익금액과 손익률 계산
     List<UserGroupMarketHoldingPnLDto.SinglePnLDto> pnLDtos = new ArrayList<>();
     for (UserGroupMarketHolding holding : userGroupMarketHoldings) {
+      if (holding.getQuantity() <= 0) {
+        userGroupMarketHoldingRepository.delete(holding);
+        continue;
+      }
+
       // 2-1. 해당 마켓의 평균 매수가 / 실시간 가격 조회
       BigDecimal avgPrice = holding.getAvgPrice();
       BigDecimal lastTradePrice = null;

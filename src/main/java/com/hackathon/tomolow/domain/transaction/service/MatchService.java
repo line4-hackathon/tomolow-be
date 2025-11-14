@@ -142,7 +142,8 @@ public class MatchService {
     log.info("매수 체결 - orderId : " + orderId);
   }
 
-  private void executeSell(String marketId, String orderId, BigDecimal tradePrice, int quantity) {
+  @Transactional
+  public void executeSell(String marketId, String orderId, BigDecimal tradePrice, int quantity) {
     Market market =
         marketRepository
             .findById(Long.valueOf(marketId))
@@ -190,6 +191,7 @@ public class MatchService {
 
     // 4. 잔여 수량 갱신
     orderRedisService.updateOrRemove(orderId, marketId, TradeType.SELL, quantity);
+    if (holding.getQuantity() <= 0) userMarketHoldingRepository.delete(holding);
 
     // 5. 체결 내역 DB에 저장
     Transaction transaction =
