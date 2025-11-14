@@ -29,7 +29,7 @@ public class RankItem {
   private String name;
 
   @Schema(description = "마켓 이미지 URL")
-  private String imageUrl; // ✅ 추가
+  private String imgUrl; // ✅ 추가
 
   @Schema(description = "현재가")
   private BigDecimal price;
