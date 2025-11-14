@@ -72,10 +72,11 @@ TomoLow는 학습과 투자가 분리된 기존 구조를 개선하여, 사용�
 <h2>👨‍👩‍👧‍👦 Members</h2>
 ### PM & DESIGN
 👑 박성준
+
 ### Backend
 | <img src="https://github.com/user-attachments/assets/b9e351ac-ccc0-483a-aaed-8e73332bab89" width="150" height="150"/> | <img src="https://github.com/user-attachments/assets/b9e351ac-ccc0-483a-aaed-8e73332bab89" width="150" height="150"/> |
 |:---------------------------------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------:|
-|                                                      BE Developer                                                       |                                      BE Developer                                       |
+|                                                      BE Developer                                                       |                                                     BE Developer                                                      |
 |                                        [윤해민](https://github.com/hamtorygoals)                                         |                                          [이경은](https://github.com/ruddmslee)                                          |
 
 ### Frontend
