@@ -130,6 +130,7 @@ public class MarketTransactionService {
     BigDecimal totalPrice = price.multiply(BigDecimal.valueOf(quantity));
     user.addCashBalance(totalPrice);
     user.subtractInvestmentBalance(totalPrice);
+    if (userMarketHolding.getQuantity() <= 0) userMarketHoldingRepository.delete(userMarketHolding);
 
     // 4. 체결 내역 DB에 저장
     Transaction transaction =

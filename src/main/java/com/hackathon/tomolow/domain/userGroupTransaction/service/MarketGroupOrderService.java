@@ -123,6 +123,8 @@ public class MarketGroupOrderService {
     BigDecimal totalPrice = price.multiply(BigDecimal.valueOf(quantity));
     userGroup.addCash(totalPrice);
     userGroup.subtractInvestment(totalPrice);
+    if (userGroupMarketHolding.getQuantity() <= 0)
+      userGroupMarketHoldingRepository.delete(userGroupMarketHolding);
 
     // 5. 체결 내역 DB에 저장
     UserGroupTransaction transaction =

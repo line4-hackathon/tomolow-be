@@ -126,7 +126,8 @@ public class UserGroupOrderMatchService {
     log.info("그룹 매수 체결 - orderId : " + orderId);
   }
 
-  private void executeSell(
+  @Transactional
+  public void executeSell(
       String marketId, String groupId, String orderId, BigDecimal tradePrice, int quantity) {
     Market market =
         marketRepository
@@ -167,6 +168,7 @@ public class UserGroupOrderMatchService {
 
     // 4. 잔여 수량 갱신
     groupOrderRedisService.updateOrRemove(orderId, marketId, TradeType.SELL, quantity, groupId);
+    if (holding.getQuantity() <= 0) userGroupMarketHoldingRepository.delete(holding);
 
     // 5. 체결 내역 DB에 저장
     UserGroupTransaction transaction =
