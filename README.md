@@ -1,7 +1,11 @@
 # 📈 TomoLow
-### 투자는 모의로, 리스크는 로우로!
-2025 멋쟁이사자처럼 4호선톤 16팀<br>
-2025.10.11 ~ 2025.11.15
+### 투자를 모의로, 리스크는 로우로!
+
+>**팀명** : 2025 멋쟁이사자처럼 4호선톤 16팀
+>
+>**개발 기간** : 2025.10.11 ~ 2025.11.14
+>
+>**배포된 주소** :https://tomolow.netlify.app/
 
 <br>
 <h2>👀 Overview</h2>
@@ -21,6 +25,17 @@ TomoLow는 학습과 투자가 분리된 기존 구조를 개선하여, 사용�
 <br><br>
 <h2>🛠️ Tech Stack</h2>
 
+#### Design (UI/UX)
+![Figma](https://img.shields.io/badge/Figma-F24E1E?style=for-the-badge&logo=figma&logoColor=white)
+
+#### Environment
+![VS Code](https://img.shields.io/badge/VS%20Code-007ACC?style=for-the-badge&logo=visual-studio-code&logoColor=white)  ![IntelliJ IDEA](https://img.shields.io/badge/IntelliJ%20IDEA-000000?style=for-the-badge&logo=intellij-idea&logoColor=white)  ![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)    ![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)  ![Swagger](https://img.shields.io/badge/-Swagger-%23Clojure?style=for-the-badge&logo=swagger&logoColor=white)
+
+#### Frontend
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)  ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)  ![Vite](https://img.shields.io/badge/Vite-4B32C3?style=for-the-badge&logo=vite&logoColor=white) ![axios](https://img.shields.io/badge/axios-007ACC?style=for-the-badge&logo=axios&logoColor=white)
+
+
+#### Backend
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
 ![Spring Security](https://img.shields.io/badge/Spring%20Security-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white)
 ![Java](https://img.shields.io/badge/Java-007396?style=for-the-badge&logo=openjdk&logoColor=white)
@@ -29,10 +44,14 @@ TomoLow는 학습과 투자가 분리된 기존 구조를 개선하여, 사용�
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 <br>
 ![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)
-![Notion](https://img.shields.io/badge/Notion-000000?style=for-the-badge&logo=notion&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
-![Discord](https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)
+![Nginx](https://camo.githubusercontent.com/278a3e7e3e82c210e5ffc2710eafb402dd4f8a4b0b7cc37361b43c42875434f6/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6e67696e782d2532333030393633392e7376673f7374796c653d666f722d7468652d6261646765266c6f676f3d6e67696e78266c6f676f436f6c6f723d7768697465)
+![Spring Data JPA](https://camo.githubusercontent.com/4728e4f606c6fd32790a751fbfd9a0d9b839fc58e26100fa052c61b7786c8d5e/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f537072696e67253230446174612532304a50412d3544384141383f7374796c653d666f722d7468652d6261646765266c6f676f3d737072696e672d64617461266c6f676f436f6c6f723d7768697465)
+![aws](https://camo.githubusercontent.com/4dae474904a8c58fd1de6463cfa4692a7ef04064d976e5d6bbbee33131471da2/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f4157532d2532334646393930302e7376673f7374796c653d666f722d7468652d6261646765266c6f676f3d616d617a6f6e2d617773266c6f676f436f6c6f723d7768697465)
+![s3](https://camo.githubusercontent.com/77a7be5787b4df3a6dfbf354a017bede2738681ffd7bcb11c92829b58a0df396/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f416d617a6f6e25323053332d3536394133312e7376673f7374796c653d666f722d7468652d6261646765266c6f676f3d616d617a6f6e2d7333266c6f676f436f6c6f723d7768697465)
 
+#### Communication
+![Notion](https://img.shields.io/badge/Notion-000000?style=for-the-badge&logo=notion&logoColor=white)  ![Discord](https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)
 
 <br><br>
 <h2>📌 Features</h2>
@@ -51,12 +70,20 @@ TomoLow는 학습과 투자가 분리된 기존 구조를 개선하여, 사용�
 
 <br><br>
 <h2>👨‍👩‍👧‍👦 Members</h2>
+### PM & DESIGN
+👑 박성준
+### Backend
+| <img src="https://github.com/user-attachments/assets/b9e351ac-ccc0-483a-aaed-8e73332bab89" width="150" height="150"/> | <img src="https://github.com/user-attachments/assets/b9e351ac-ccc0-483a-aaed-8e73332bab89" width="150" height="150"/> |
+|:---------------------------------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------:|
+|                                                      BE Developer                                                       |                                      BE Developer                                       |
+|                                        [윤해민](https://github.com/hamtorygoals)                                         |                                          [이경은](https://github.com/ruddmslee)                                          |
 
-|PM|FE|FE|FE|BE|BE|
-|:--:|:--:|:--:|:--:|:--:|:--:|
-|||||||
-|동국대|숙명여대|동국대|서경대|서경대|숙명여대|
-|박성준|박소연|박수연|정목진|윤해민|이경은|
+### Frontend
+| <img src="https://github.com/user-attachments/assets/b9e351ac-ccc0-483a-aaed-8e73332bab89" width="150" height="150"/> | <img src="https://github.com/user-attachments/assets/b9e351ac-ccc0-483a-aaed-8e73332bab89" width="150" height="150"/> | <img src="https://github.com/user-attachments/assets/b9e351ac-ccc0-483a-aaed-8e73332bab89" width="150" height="150"/> |
+|:---------------------------------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------:|
+|                                         FE Developer                                          |                                        FE Developer                                        |                                    FE Developer                                     |
+|                                           [박소연](https://github.com/ss0yaa)                                            |                                           [박수연](https://github.com/krlyeon)                                           |                                         [정목진](https://github.com/Jeongmokjin)                                         |
+
 
 <br><br>
 <h2>📁 Project Structure</h2>
