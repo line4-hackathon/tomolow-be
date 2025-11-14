@@ -18,4 +18,8 @@ public interface UserGroupTransactionRepository extends JpaRepository<UserGroupT
 
   // 해당 UserGroup의 첫 거래 하나 (createdAt 오름차순)
   Optional<UserGroupTransaction> findFirstByUserGroupOrderByCreatedAtAsc(UserGroup userGroup);
+
+  List<UserGroupTransaction> findAllByUserGroupId(Long userGroupId);
+
+  List<UserGroupTransaction> findAllByUserGroup_Id(Long userGroupId);
 }

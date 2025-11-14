@@ -123,14 +123,14 @@ public class MarketTransactionService {
       throw new CustomException(UserMarketHoldingErrorCode.INSUFFICIENT_QUANTITY);
     }
 
-    // 2. 보유 수량 감소
-    userMarketHolding.subtractQuantity(quantity);
-
-    // 3. 사용자 자산 변화
+    // 2. 사용자 자산 변화
     BigDecimal totalPrice = price.multiply(BigDecimal.valueOf(quantity));
     user.addCashBalance(totalPrice);
     user.subtractInvestmentBalance(totalPrice);
     if (userMarketHolding.getQuantity() <= 0) userMarketHoldingRepository.delete(userMarketHolding);
+
+    // 3. 보유 수량 감소
+    userMarketHolding.subtractQuantity(quantity);
 
     // 4. 체결 내역 DB에 저장
     Transaction transaction =
