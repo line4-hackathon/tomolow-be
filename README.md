@@ -71,7 +71,7 @@ TomoLow는 학습과 투자가 분리된 기존 구조를 개선하여, 사용�
 <br><br>
 <h2>👨‍👩‍👧‍👦 Members</h2>
 ### PM & DESIGN
-👑 박성준
+#### 👑 박성준
 
 ### Backend
 | <img src="https://github.com/user-attachments/assets/b9e351ac-ccc0-483a-aaed-8e73332bab89" width="150" height="150"/> | <img src="https://github.com/user-attachments/assets/b9e351ac-ccc0-483a-aaed-8e73332bab89" width="150" height="150"/> |
