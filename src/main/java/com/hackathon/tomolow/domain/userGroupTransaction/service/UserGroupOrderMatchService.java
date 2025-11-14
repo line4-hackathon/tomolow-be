@@ -126,7 +126,8 @@ public class UserGroupOrderMatchService {
     log.info("그룹 매수 체결 - orderId : " + orderId);
   }
 
-  private void executeSell(
+  @Transactional
+  public void executeSell(
       String marketId, String groupId, String orderId, BigDecimal tradePrice, int quantity) {
     Market market =
         marketRepository
@@ -155,18 +156,19 @@ public class UserGroupOrderMatchService {
       return;
     }
 
-    // 2. 보유 수량 감소
-    holding.subtractQuantity(quantity);
-
-    // 3. 사용자 자산 변화
+    // 2. 사용자 자산 변화
     BigDecimal totalPrice = tradePrice.multiply(BigDecimal.valueOf(quantity)); // 매도금액
     userGroup.addCash(totalPrice);
 
     BigDecimal costBasis = holding.getAvgPrice().multiply(BigDecimal.valueOf(quantity));
     userGroup.subtractInvestment(costBasis);
 
+    // 3. 보유 수량 감소
+    holding.subtractQuantity(quantity);
+
     // 4. 잔여 수량 갱신
     groupOrderRedisService.updateOrRemove(orderId, marketId, TradeType.SELL, quantity, groupId);
+    if (holding.getQuantity() <= 0) userGroupMarketHoldingRepository.delete(holding);
 
     // 5. 체결 내역 DB에 저장
     UserGroupTransaction transaction =
