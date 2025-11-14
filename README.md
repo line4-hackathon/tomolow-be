@@ -59,16 +59,24 @@ TomoLow는 학습과 투자가 분리된 기존 구조를 개선하여, 사용�
 <br><br>
 <h2>📌 Features</h2>
 
+<img width="2146" height="1202" alt="image" src="https://github.com/user-attachments/assets/bbf6b488-7038-4a32-8fef-0f82120aca75" />
+<img width="2152" height="1204" alt="image" src="https://github.com/user-attachments/assets/b5dbc632-f72d-4d16-af99-85278e071fe6" />
+<img width="2160" height="1208" alt="image" src="https://github.com/user-attachments/assets/96def38c-cf8a-4078-9e35-7c099014a73e" />
+<img width="2162" height="1206" alt="image" src="https://github.com/user-attachments/assets/53198950-fbed-4032-9d2d-8f2c73cefb60" />
+
 ### 모의투자
 - 실시간 가상화폐 시세를 기반으로 매매를 할 수 있는 모의투자를 진행합니다.
 - 시장가 및 지정가 매수/매도 기능을 제공하며, 거래 내역과 손익률을 확인할 수 있습니다.
+  
 ### 학습
 - AI 챗봇에게 경제적 개념이나 특정 종목의 데이터를 기반으로 궁금한 점을 질문하며 학습힙니다.
 - 차트에서 원하는 종목과 기간을 선택하면 RAG 방식으로 해당 기간 뉴스를 분석해 사용자의 질문에 대한 답변을 제공합니다.
 - 도움이 된 채팅은 저장하여 학습 정보를 복습하 정리할 수 있습니다.
+  
 ### 그룹 모의투자
 - 멤버를 초대해 그룹으로 모의투자를 진행하며 선의의 경쟁을 유도합니다.
 - 그룹에 참가 시 시드머니를 지불하고, 손익률 1위를 달성한 사용자 그룹 내 모든 참가자들의 시드머니를 획득하는 게이미피케이션 기능을 제공합니다.
+
 
 
 <br><br>
