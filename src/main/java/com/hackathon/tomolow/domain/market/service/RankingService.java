@@ -103,7 +103,7 @@ public class RankingService {
             .marketId(m != null ? m.getId() : null)
             .symbol(symbol)
             .name(m != null ? m.getName() : symbol)
-            .imageUrl(m != null ? m.getImgUrl() : null)
+            .imgUrl(m != null ? m.getImgUrl() : null)
             .price(BigDecimal.ZERO)
             .build();
       }
@@ -119,7 +119,7 @@ public class RankingService {
           .marketId(m != null ? m.getId() : null)
           .symbol(symbol)
           .name(m != null ? m.getName() : symbol)
-          .imageUrl(m != null ? m.getImgUrl() : null)
+          .imgUrl(m != null ? m.getImgUrl() : null)
           .price(readBig(t, "tradePrice"))
           .changeRate(readBig(t, "changeRate"))
           .changePrice(readBig(t, "changePrice"))
@@ -131,7 +131,7 @@ public class RankingService {
           .marketId(m != null ? m.getId() : null)
           .symbol(symbol)
           .name(m != null ? m.getName() : symbol)
-          .imageUrl(m != null ? m.getImgUrl() : null)
+          .imgUrl(m != null ? m.getImgUrl() : null)
           .price(BigDecimal.ZERO)
           .build();
     }
