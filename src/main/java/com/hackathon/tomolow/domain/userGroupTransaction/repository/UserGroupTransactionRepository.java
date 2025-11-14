@@ -21,4 +21,7 @@ public interface UserGroupTransactionRepository extends JpaRepository<UserGroupT
 
   List<UserGroupTransaction> findAllByUserGroupAndCreatedAtBetweenOrderByCreatedAtAsc(
       UserGroup userGroup, LocalDateTime start, LocalDateTime end);
+  List<UserGroupTransaction> findAllByUserGroupId(Long userGroupId);
+
+  List<UserGroupTransaction> findAllByUserGroup_Id(Long userGroupId);
 }
