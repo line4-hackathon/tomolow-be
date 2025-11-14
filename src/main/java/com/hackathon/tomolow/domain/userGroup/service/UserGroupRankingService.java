@@ -187,10 +187,7 @@ public class UserGroupRankingService {
     if (totalBuy.compareTo(BigDecimal.ZERO) == 0) {
       pnLRate = BigDecimal.ZERO;
     } else {
-      pnLRate =
-          pnL.divide(totalBuy, 6, RoundingMode.HALF_UP)
-              .multiply(BigDecimal.valueOf(100))
-              .setScale(1, RoundingMode.HALF_UP);
+      pnLRate = pnL.divide(totalBuy, 6, RoundingMode.HALF_UP);
     }
     result.put("pnL", pnL);
     result.put("pnLRate", pnLRate);
