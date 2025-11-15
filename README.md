@@ -1,7 +1,7 @@
 # 📈 TomoLow
 ### 투자를 모의로, 리스크는 로우로!
 <img width="977" height="548" alt="image" src="https://github.com/user-attachments/assets/a6550742-ae04-4b2e-9bbe-14ab504a786c" />
-
+![img.png](img.png)
 
 >**팀명** : 2025 멋쟁이사자처럼 4호선톤 16팀
 >
